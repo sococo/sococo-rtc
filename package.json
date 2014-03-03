@@ -1,0 +1,16 @@
+{
+  "name": "SococoRTC",
+  "version": "0.0.0",
+  "description": "WebRTC library that manages all the mischief.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "keywords": [
+    "WebRTC",
+    "Signaling",
+    "PeerConnection"
+  ],
+  "author": "Justin DuJardin"
+}
