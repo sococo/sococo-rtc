@@ -10,16 +10,17 @@
    <link href="./css/bootstrap.min.css" rel="stylesheet">
    <link href="./index.css" rel="stylesheet">
    <link href="./css/icons.css" rel="stylesheet">
-<body>
-<div class="site-wrapper">
+<body ng-app>
+<div class="site-wrapper" ng-init="peers=['Jason','Charles','Emily','Dr.Doom']">
    <div class="site-wrapper-inner">
       <div class="cover-container">
          <div class="masthead">
             <div class="inner clearfix">
                <div class="masthead-brand">
-                  <a class="srtc-volume active" href="#"></a>
-                  <a class="srtc-microphone" href="#"></a>
-                  <a class="srtc-video" href="#"></a>
+                  <h3>Sococo.RTC</h3>
+                  <!--<a class="srtc-volume active" href="#"></a>-->
+                  <!--<a class="srtc-microphone" href="#"></a>-->
+                  <!--<a class="srtc-video" href="#"></a>-->
                </div>
                <ul class="nav masthead-nav">
                   <li><a href="#">About</a></li>
@@ -29,9 +30,8 @@
          </div>
 
          <div class="inner cover rtc-panel-raise">
-            <h1 class="cover-heading">WebRTC made usable.</h1>
-            <p class="lead">Veggies es bonus vobis, proinde vos postulo essum magis kohlrabi welsh onion daikon amaranth tatsoi tomatillo melon azuki bean garlic.</p>
-            <p class="lead rtc-panel-drop">Gumbo beet greens corn soko endive gumbo gourd. Parsley shallot courgette tatsoi pea sprouts fava bean collard greens dandelion okra wakame tomato. Dandelion cucumber earthnut pea peanut soko zucchini.</p>
+            <h1 class="cover-heading">Peers</h1>
+            <p ng-repeat="peer in peers" class="lead rtc-panel-drop">{{peer}}</p>
          </div>
 
          <div class="mastfoot">
@@ -43,5 +43,7 @@
       </div>
    </div>
 </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.14/angular.min.js"></script>
 </body>
 </html>
