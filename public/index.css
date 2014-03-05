@@ -11,6 +11,8 @@ body {
    color: #fff;
    text-align: center;
    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+   text-rendering: optimizeLegibility;
+   -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -44,10 +46,8 @@ a:hover {
    margin-right: auto;
    margin-left: auto;
 }
-
-/* Padding for spacing */
 .inner {
-   padding: 10px 30px;
+   padding: 10px 0;
 }
 
 
@@ -154,13 +154,16 @@ a:hover {
  */
 
 @media (min-width: 768px) {
+   /* pad the left/right sides of inner */
+   .inner {
+      padding: 10px 30px;
+   }
    /* Pull out the header and footer */
    .masthead {
       position: fixed;
       top: 0;
    }
    .mastfoot {
-      position: fixed;
       bottom: 0;
    }
    /* Start the vertical centering */
@@ -180,6 +183,9 @@ a:hover {
    .mastfoot,
    .cover-container {
       width: 700px;
+   }
+   .inner {
+      padding: 10px 0;
    }
 }
 
