@@ -10,7 +10,8 @@ var bayeux = new faye.NodeAdapter({
 });
 var env = server.get('env');
 
-var serverPort = 4202;
+// Heroku will specify the port to listen on with the `process.env.PORT` variable.
+var serverPort = process.env.PORT || 4202;
 
 // gzip scripts/css when possible.
 server.use(express.compress());
