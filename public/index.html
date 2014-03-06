@@ -22,6 +22,9 @@
       </div>
    </div>
 
+   <div class="loading rtc-panel-raise" ng-hide="peers.length > 0">
+      <h1>Loading...</h1>
+   </div>
    <div class="cover rtc-panel-raise ng-hide" ng-show="peers.length > 0">
       <h1 class="cover-heading">Peers</h1>
       <p ng-repeat="peer in peers" class="lead rtc-panel-drop">{{peer}}</p>
