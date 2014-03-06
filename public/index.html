@@ -3,47 +3,58 @@
    <meta charset="utf-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="Sococo.RTC Example">
-   <meta name="author" content="Justin DuJardin">
+   <meta name="description" content="Sococo.RTC">
+   <meta name="author" content="Social Communications Company">
    <title>Sococo RTC Playground</title>
-   <!-- Bootstrap core CSS -->
-   <link href="./css/bootstrap.min.css" rel="stylesheet">
-   <link href="./index.css" rel="stylesheet">
-   <link href="./css/icons.css" rel="stylesheet">
-<body ng-app>
-<div class="site-wrapper" ng-init="peers=['Richard','Charles','Emily','Dr.Doom']">
-   <div class="site-wrapper-inner">
-      <div class="cover-container">
-         <div class="masthead">
-            <div class="inner clearfix">
-               <div class="masthead-brand">
-                  <h3>Sococo.RTC</h3>
-                  <!--<a class="srtc-volume active" href="#"></a>-->
-                  <!--<a class="srtc-microphone" href="#"></a>-->
-                  <!--<a class="srtc-video" href="#"></a>-->
-               </div>
-               <ul class="nav masthead-nav">
-                  <li><a href="#">About</a></li>
-                  <li><a href="#">Blog</a></li>
-               </ul>
-            </div>
+   <link href="./app/sococo-rtc.min.css" rel="stylesheet">
+<body ng-app ng-init="peers=['Richard','Charles','Emily','Dr.Doom']">
+<div class="cover-container">
+   <div class="masthead">
+      <div class="inner clearfix">
+         <div class="masthead-brand">
+            <h2>Sococo.RTC</h2>
          </div>
-
-         <div class="cover rtc-panel-raise">
-            <h1 class="cover-heading">Peers</h1>
-            <p ng-repeat="peer in peers" class="lead rtc-panel-drop">{{peer}}</p>
-         </div>
-
-         <div class="mastfoot">
-            <a class="srtc-social-github" href="#"></a>
-            <a class="srtc-social-facebook" href="https://www.facebook.com/sococo"></a>
-            <a class="srtc-social-linkedin" href="http://www.linkedin.com/company/sococo"></a>
-            <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
-         </div>
+         <ul class="nav masthead-nav">
+            <li><a class="srtc-volume active" href="#"></a></li>
+            <li><a class="srtc-microphone" href="#"></a></li>
+            <li><a class="srtc-video" href="#"></a></li>
+         </ul>
       </div>
+   </div>
+
+   <div class="cover rtc-panel-raise ng-hide" ng-show="peers.length > 0">
+      <h1 class="cover-heading">Peers</h1>
+      <p ng-repeat="peer in peers" class="lead rtc-panel-drop">{{peer}}</p>
+   </div>
+
+   <div class="mastfoot">
+      <a class="srtc-social-github" href="#"></a>
+      <a class="srtc-social-facebook" href="https://www.facebook.com/sococo"></a>
+      <a class="srtc-social-linkedin" href="http://www.linkedin.com/company/sococo"></a>
+      <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
    </div>
 </div>
 
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.14/angular.min.js"></script>
+<!-- Asynchronously load angular and the app. -->
+<script type="text/javascript">
+   /* Based on: http://jeremyhixon.com/snippet/loading-javascript-files-asynchronously/ */
+   function asyncScriptLoad(url,success){
+      var script = document.createElement('script');
+      script.src = url;
+      script.async = !0;
+      var head = document.getElementsByTagName('head')[0];
+      script.onload = script.onreadystatechange = function(){
+         if (!!success && (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete')) {
+            success();
+            script.onload = script.onreadystatechange = null;
+            head.removeChild(script);
+         }
+      };
+      head.appendChild(script);
+   }
+   asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js",function(){
+      asyncScriptLoad("app/sococo-rtc.min.js");
+   });
+</script>
 </body>
 </html>

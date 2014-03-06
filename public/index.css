@@ -15,6 +15,10 @@ body {
    -webkit-font-smoothing: antialiased;
 }
 
+.ng-hide {
+   display: none !important;
+}
+
 a {
    color:#222;
    text-shadow: 1px 1px 0 rgba(255,255,255,0.1);
@@ -32,16 +36,6 @@ a:hover {
 }
 
 /* Extra markup and styles for table-esque vertical and horizontal centering */
-.site-wrapper {
-   display: table;
-   width: 100%;
-   height: 100%; /* For at least Firefox */
-   min-height: 100%;
-}
-.site-wrapper-inner {
-   display: table-cell;
-   vertical-align: top;
-}
 .cover-container {
    margin-right: auto;
    margin-left: auto;
@@ -70,8 +64,7 @@ a:hover {
 .masthead-nav > li > a {
    padding-right: 0;
    padding-left: 0;
-   font-size: 16px;
-   font-weight: bold;
+   font-size: 42px;
 }
 .masthead-nav > li > a:hover,
 .masthead-nav > li > a:focus {
@@ -160,7 +153,6 @@ a:hover {
    }
    /* Pull out the header and footer */
    .masthead {
-      position: fixed;
       top: 0;
    }
    .mastfoot {

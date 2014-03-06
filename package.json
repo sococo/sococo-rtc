@@ -14,7 +14,15 @@
   ],
   "author": "Justin DuJardin",
   "dependencies": {
-    "express": "~3.4.8",
-    "faye": "~1.0.1"
+    "express": "3.4.8",
+    "faye": "1.0.1"
+  },
+  "devDependencies": {
+    "grunt": "0.4.2",
+    "grunt-cli": "0.1.13",
+    "grunt-typescript": "0.2.8",
+    "grunt-contrib-cssmin": "0.8.0",
+    "grunt-contrib-uglify": "0.3.3",
+    "grunt-contrib-concat": "0.3.0"
   }
 }
