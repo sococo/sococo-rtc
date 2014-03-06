@@ -4,7 +4,8 @@
   "description": "WebRTC library that manages all the mischief.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "./node_modules/.bin/grunt"
   },
   "repository": "",
   "keywords": [
@@ -15,9 +16,7 @@
   "author": "Justin DuJardin",
   "dependencies": {
     "express": "3.4.8",
-    "faye": "1.0.1"
-  },
-  "devDependencies": {
+    "faye": "1.0.1",
     "grunt": "0.4.2",
     "grunt-cli": "0.1.13",
     "grunt-typescript": "0.2.8",
