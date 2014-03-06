@@ -1,9 +1,31 @@
-// Sococo.RTC - Stripped down Backbone.Events class for Typescript Pub-Sub.
+// Sococo.RTC - Basic event emitter
 //
 // Replace with your project's existing event emitter when needed.
 module Sococo.RTC {
-   //     Backbone.js 0.9.10
 
+   // Expected interface for for event emitter objects
+   export interface IEvents {
+      on(name: any, callback?: Function, context?: any): any;
+      off(name?: string, callback?: Function, context?: any): any;
+      trigger(name: string, ...args): any;
+   }
+
+   // Keys utility from Underscore.js (required for event emitter impl)
+
+   //     Underscore.js 1.4.3
+   //     http://underscorejs.org
+   //     (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
+   //     Underscore may be freely distributed under the MIT license.
+   var keys = function(obj) {
+      if (obj !== Object(obj)) throw new TypeError('Invalid object');
+      var keys = [];
+      for (var key in obj) if (obj.hasOwnProperty(key)) keys[keys.length] = key;
+      return keys;
+   };
+
+   // Event emitter implementation based on Backbone.Events.
+
+   //     Backbone.js 0.9.10
    //     (c) 2010-2012 Jeremy Ashkenas, DocumentCloud Inc.
    //     Backbone may be freely distributed under the MIT license.
    //     For all details and documentation:
@@ -11,13 +33,6 @@ module Sococo.RTC {
 
    // Regular expression used to split event strings.
    var eventSplitter = /\s+/;
-
-   var keys = function(obj) {
-      if (obj !== Object(obj)) throw new TypeError('Invalid object');
-      var keys = [];
-      for (var key in obj) if (obj.hasOwnProperty(key)) keys[keys.length] = key;
-      return keys;
-   };
 
    // Implement fancy features of the Events API such as multiple event
    // names `"change blur"` and jQuery-style event maps `{change: action}`
@@ -55,16 +70,6 @@ module Sococo.RTC {
       }
    };
 
-   export interface IEvents {
-      on(name: any, callback?: Function, context?: any): any;
-      off(name?: string, callback?: Function, context?: any): any;
-      trigger(name: string, ...args): any;
-   }
-
-
-   // Stripped down backbone.Events implementation to satisfy base pub-sub requirement.
-   // This is intended to be replaced with whatever event mechanism a project uses.
-   //
    export class Events implements IEvents {
       private _events:any;
 
