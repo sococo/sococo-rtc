@@ -44,7 +44,7 @@
       $scope.peers = ['Richard','Charles','Emily','Dr.Doom'];
       var host = location.origin
          .replace(/^([a-zA-z]+):\/\//, '')
-         .replace(/(\d+)$/,"<%=pubsubport%>");
+         .replace(/:(\d+)$/,":<%=pubsubport%>");
       $scope.localPeer = new Sococo.RTC.PeerConnectionManager({
          location:"demoRoom",
          localId:"Demo User",
