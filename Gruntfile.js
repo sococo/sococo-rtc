@@ -53,6 +53,19 @@ module.exports = function(grunt) {
                'public/app/sococo-rtc.min.css': ['public/app/sococo-rtc.css']
             }
          }
+      },
+
+
+      // Watch for changes and trigger associated tasks.
+      watch: {
+         scripts: {
+            files: ['source/*.ts'],
+            tasks: ['typescript','uglify']
+         },
+         styles: {
+            files: ['<%= concat.styles.src %>'],
+            tasks: ['concat','cssmin']
+         }
       }
    };
 
@@ -62,5 +75,6 @@ module.exports = function(grunt) {
    grunt.loadNpmTasks('grunt-contrib-concat');
    grunt.loadNpmTasks('grunt-contrib-cssmin');
    grunt.loadNpmTasks('grunt-contrib-uglify');
+   grunt.loadNpmTasks('grunt-contrib-watch');
    grunt.registerTask('default', ['typescript','concat','uglify','cssmin']);
 };
