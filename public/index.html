@@ -7,14 +7,14 @@
    <meta name="author" content="Social Communications Company">
    <title>Sococo RTC Playground</title>
    <link href="./app/sococo-rtc.min.css" rel="stylesheet">
-<body ng-app ng-init="peers=['Richard','Charles','Emily','Dr.Doom']">
-<div class="cover-container">
+<body ng-app>
+<div class="cover-container" ng-controller="AppController">
    <div class="masthead">
       <div class="inner clearfix">
          <div class="masthead-brand">
             <h2>Sococo.RTC</h2>
          </div>
-         <ul class="nav masthead-nav">
+         <ul class="controls">
             <li><a class="srtc-volume active" href="#"></a></li>
             <li><a class="srtc-microphone" href="#"></a></li>
             <li><a class="srtc-video" href="#"></a></li>
@@ -27,7 +27,7 @@
    </div>
    <div class="cover rtc-panel-raise ng-hide" ng-show="peers.length > 0">
       <h1 class="cover-heading">Peers</h1>
-      <p ng-repeat="peer in peers" class="lead rtc-panel-drop">{{peer}}</p>
+      <p ng-repeat="peer in peers" class="rtc-panel-drop">{{peer}}</p>
    </div>
 
    <div class="mastfoot">
@@ -37,6 +37,19 @@
       <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
    </div>
 </div>
+
+<!-- Define the angular app controller -->
+<script type="text/javascript">
+   function AppController($scope){
+      $scope.peers = ['Richard','Charles','Emily','Dr.Doom'];
+      $scope.localPeer = new Sococo.RTC.PeerConnectionManager({
+         location:"demoRoom",
+         localId:"Demo User",
+         serverUrl:"localhost:4202",
+         serverMount:"/meet"
+      });
+   }
+</script>
 
 <!-- Asynchronously load angular and the app. -->
 <script type="text/javascript">
@@ -55,8 +68,10 @@
       };
       head.appendChild(script);
    }
-   asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js",function(){
-      asyncScriptLoad("app/sococo-rtc.min.js");
+   asyncScriptLoad("js/faye-browser-min.js",function(){
+      asyncScriptLoad("app/sococo-rtc.min.js",function(){
+         asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js");
+      });
    });
 </script>
 </body>

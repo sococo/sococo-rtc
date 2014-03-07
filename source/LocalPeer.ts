@@ -12,6 +12,7 @@ module Sococo.RTC {
       location:string;
       localId:string;
       serverUrl:string;
+      serverMount:string; // e.g. "/faye"
    }
 
    export interface PeerProperties {
@@ -28,7 +29,6 @@ module Sococo.RTC {
     */
    export class PeerConnectionManager extends Events {
       config:PeerChannelProperties;
-      private _localUser:string = "TestUser";
       private _peerConnections:any = {};
       private _properties:PeerProperties = {
          sendVideo:false,
@@ -53,7 +53,7 @@ module Sococo.RTC {
       getServerEndpoint():string {
          var protocol = '//';
          var host = this.config.serverUrl || 'localhost:4202';
-         return protocol + host + '/faye';
+         return protocol + host + (this.config.serverMount || '/');
       }
       addPeer(userId:string){
          if(userId === this.config.localId){

@@ -35,13 +35,17 @@ a:hover {
    text-shadow: 1px 1px 0 rgba(20,20,20,0.3);
 }
 
-/* Extra markup and styles for table-esque vertical and horizontal centering */
 .cover-container {
    margin-right: auto;
    margin-left: auto;
 }
 .inner {
    padding: 10px 0;
+}
+
+.loading > h1 {
+   text-align:center;
+   font-weight:200;
 }
 
 
@@ -55,19 +59,24 @@ a:hover {
 }
 
 
-.masthead-nav > li {
+ul.controls {
+   padding:0;
+   margin:0;
+   list-style-type: none;
+}
+ul.controls > li {
    display: inline-block;
 }
-.masthead-nav > li + li {
+ul.controls > li + li {
    margin-left: 20px;
 }
-.masthead-nav > li > a {
+ul.controls > li > a {
    padding-right: 0;
    padding-left: 0;
    font-size: 42px;
 }
-.masthead-nav > li > a:hover,
-.masthead-nav > li > a:focus {
+ul.controls > li > a:hover,
+ul.controls > li > a:focus {
    background-color: transparent;
 }
 
@@ -75,7 +84,7 @@ a:hover {
    .masthead-brand {
       float: left;
    }
-   .masthead-nav {
+   ul.controls {
       float: right;
    }
 }
