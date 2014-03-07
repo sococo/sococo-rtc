@@ -45,8 +45,8 @@
       $scope.localPeer = new Sococo.RTC.PeerConnectionManager({
          location:"demoRoom",
          localId:"Demo User",
-         serverUrl:"localhost:4202",
-         serverMount:"/meet"
+         serverUrl:"<%=pubsub%>",
+         serverMount:"<%=pubsubmount%>"
       });
    }
 </script>
