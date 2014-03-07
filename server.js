@@ -5,10 +5,6 @@ var express = require('express');
 var server = express();
 var faye = require('faye');
 var bayeuxMount = "/meet";
-var bayeux = new faye.NodeAdapter({
-   mount:    bayeuxMount,
-   timeout:  45
-});
 var env = server.get('env');
 
 // Heroku will specify the port to listen on with the `process.env.PORT` variable.
@@ -36,17 +32,8 @@ server.configure('production', function(){
 
 
 server.get('/', function(req,res){
-   // Attempt to get IP from heroku instance
-   // From: http://lostechies.com/derickbailey/2013/12/04/getting-the-real-client-ip-address-on-a-heroku-hosted-nodejs-app/
-   var wsHost = req.headers["x-forwarded-for"];
-   if (wsHost){
-      var list = wsHost.split(",");
-      wsHost = list[list.length-1];
-   } else {
-      wsHost = req.connection.remoteAddress;
-   }
    res.render('index.html',{
-      pubsub:wsHost + ":" + serverPort,
+      pubsubport:serverPort,
       pubsubmount:bayeuxMount
    });
 });
@@ -63,6 +50,10 @@ server.use(express.static(path.resolve(__dirname + "/public")));
 server.use("/source", express.static(path.resolve(__dirname + "/source")));
 
 // Set up faye realtime connections
+var bayeux = new faye.NodeAdapter({
+   mount:    bayeuxMount,
+   timeout:  45
+});
 var hServer = server.listen(serverPort);
 bayeux.attach(hServer);
 console.log("Server running on port " + serverPort);
