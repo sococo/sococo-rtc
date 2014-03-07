@@ -37,6 +37,8 @@ server.configure('production', function(){
 // Mount the `public` directory for static file serving.
 server.use(express.static(path.resolve(__dirname + "/public")));
 
+server.use("/source", express.static(path.resolve(__dirname + "/source")));
+
 // Set up faye realtime connections
 var hServer = server.listen(serverPort);
 bayeux.attach(hServer);
