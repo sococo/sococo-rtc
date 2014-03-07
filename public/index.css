@@ -115,8 +115,6 @@ ul.controls > li > a:focus {
 
 .mastfoot {
    position: fixed;
-   left:0;
-   right:0;
    bottom:0;
    text-align: center;
    color: #999; /* IE8 proofing */
@@ -144,9 +142,12 @@ ul.controls > li > a:focus {
 
 
 /* Custom panels */
+input,
 .rtc-panel-drop {
    background:#333;
    background-color: rgba(0, 0, 0, 0.3);
+   border:1px solid #222;
+   border:1px solid rgba(0,0,0,0.1);
    border-radius: 6px;
    -moz-border-radius: 6px;
    -webkit-border-radius: 6px;
@@ -164,6 +165,22 @@ ul.controls > li > a:focus {
    -moz-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 255, 255, 0.3);
    -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 255, 255, 0.3);
    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 255, 255, 0.3);
+}
+
+
+/* inputs */
+.name-input {
+   font-size: 1.3em;
+   line-height:0.9;
+}
+input {
+}
+input:focus{
+   -webkit-box-shadow: inset 0 0 4px #6f5499;
+   -moz-box-shadow: inset 0 0 4px #6f5499;
+   box-shadow: inset 0 0 4px #6f5499;
+   outline: 0;
+   border-color: #6f5499;
 }
 
 
@@ -193,12 +210,20 @@ ul.controls > li > a:focus {
    .cover-container {
       width: 100%; /* Must be percentage or pixels for horizontal alignment */
    }
+
+   .name-input{
+      font-size: 2.3em;
+   }
 }
 
 @media (min-width: 992px) {
    .masthead,
+   .mastfoot,
    .cover-container {
       width: 700px;
+      margin-left:auto;
+      margin-right:auto;
+      text-align: center;
    }
    .inner {
       padding: 10px 0;
@@ -219,13 +244,6 @@ ul.controls > li > a:focus {
       Youtube #FF3333
   --- End ---
 */
-.font-test {
-   font-size: 200px;
-   text-shadow: 1px 1px 0 rgba(0,0,0,.5);
-   color: #444;
-   text-align: center;
-   cursor: pointer;
-}
 
 .srtc-html5:hover {
    color:#F06529;
