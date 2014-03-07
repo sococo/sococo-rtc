@@ -68,11 +68,13 @@
       };
       head.appendChild(script);
    }
-   asyncScriptLoad("js/faye-browser-min.js",function(){
-      asyncScriptLoad("app/sococo-rtc.min.js",function(){
-         asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js");
+   window.onload = function() {
+      asyncScriptLoad("js/faye-browser-min.js",function(){
+         asyncScriptLoad("app/sococo-rtc.min.js",function(){
+            asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js");
+         });
       });
-   });
+   };
 </script>
 </body>
 </html>
