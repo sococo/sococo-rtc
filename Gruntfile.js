@@ -29,6 +29,7 @@ module.exports = function(grunt) {
          styles:{
             src: [
                "public/css/bootstrap.css",
+               "public/css/animate.css",
                "public/index.css",
                "public/fonts/sococortc.css"
             ],

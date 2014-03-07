@@ -46,6 +46,7 @@ a:hover {
 .loading > h1 {
    text-align:center;
    font-weight:200;
+   margin:25px;
 }
 
 /*
@@ -113,6 +114,11 @@ ul.controls > li > a:focus {
  */
 
 .mastfoot {
+   position: fixed;
+   left:0;
+   right:0;
+   bottom:0;
+   text-align: center;
    color: #999; /* IE8 proofing */
    color: rgba(255,255,255,.5);
    font-size: 42px;
@@ -126,6 +132,13 @@ ul.controls > li > a:focus {
 
 .mastfoot a {
    color:#222;
+}
+
+/* Don't let the mastfoot overlap content. */
+@media (max-height: 480px) {
+   .mastfoot {
+      position: static;
+   }
 }
 
 
@@ -184,7 +197,6 @@ ul.controls > li > a:focus {
 
 @media (min-width: 992px) {
    .masthead,
-   .mastfoot,
    .cover-container {
       width: 700px;
    }

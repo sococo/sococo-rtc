@@ -22,10 +22,10 @@
       </div>
    </div>
 
-   <div class="loading rtc-panel-raise" ng-hide="peers.length > 0">
-      <h1>Loading...</h1>
+   <div class="loading rtc-panel-raise animated bounceIn" ng-hide="peers.length > 0">
+      <h1 class="">Loading...</h1>
    </div>
-   <div class="cover rtc-panel-raise ng-hide" ng-show="peers.length > 0">
+   <div class="cover rtc-panel-raise ng-hide animated fadeInDown" ng-show="peers.length > 0">
       <h1 class="cover-heading">Peers</h1>
       <p ng-repeat="peer in peers" class="rtc-panel-drop">{{peer}}</p>
    </div>
@@ -42,6 +42,8 @@
 <script type="text/javascript">
    function AppController($scope){
       $scope.peers = ['Richard','Charles','Emily','Dr.Doom'];
+      $scope.userName = null;
+      $scope.localVideo = null;
       var host = location.origin
          .replace(/^([a-zA-z]+):\/\//, '')
          .replace(/:(\d+)$/,":<%=pubsubport%>");
