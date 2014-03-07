@@ -7,49 +7,53 @@
    <meta name="author" content="Social Communications Company">
    <title>Sococo RTC Playground</title>
    <link href="./app/sococo-rtc.min.css" rel="stylesheet">
-<body ng-app>
-<div class="cover-container" ng-controller="AppController">
-   <div class="masthead">
-      <div class="inner clearfix">
-         <div class="masthead-brand">
-            <h2>Sococo.RTC</h2>
-         </div>
-         <ul class="controls">
-            <li><a class="srtc-volume active" href="#"></a></li>
-            <li><a class="srtc-microphone" href="#"></a></li>
-            <li><a class="srtc-video" href="#"></a></li>
-         </ul>
-      </div>
-   </div>
+<body ng-app ng-controller="AppController">
 
-   <div class="loading rtc-panel-raise animated bounceIn" ng-hide="peers.length > 0">
+<div class="masthead">
+   <div class="inner clearfix">
+      <div class="masthead-brand">
+         <h2>Sococo.RTC</h2>
+      </div>
+      <ul class="controls">
+         <li><a class="srtc-volume active" href="#" ng-click="toggleListen"></a></li>
+         <li><a class="srtc-microphone" href="#" ng-click="toggleTalk"></a></li>
+         <li><a class="srtc-video" href="#" ng-click="toggleVideo"></a></li>
+      </ul>
+   </div>
+</div>
+
+<div class="cover-container">
+   <div class="loading rtc-panel-raise animated bounceIn" ng-hide="initialized">
       <h1 class="">Loading...</h1>
    </div>
-   <div class="cover rtc-panel-raise ng-hide animated fadeInDown" ng-show="peers.length > 0">
-      <h1 class="cover-heading">Peers</h1>
+   <div class="cover rtc-panel-raise ng-hide animated fadeInDown" ng-show="initialized">
+      <!--<span>Name: <input type="text" ng-model="userName"></span>-->
       <p ng-repeat="peer in peers" class="rtc-panel-drop">{{peer}}</p>
    </div>
+</div>
 
-   <div class="mastfoot">
-      <a class="srtc-social-github" href="#"></a>
-      <a class="srtc-social-facebook" href="https://www.facebook.com/sococo"></a>
-      <a class="srtc-social-linkedin" href="http://www.linkedin.com/company/sococo"></a>
-      <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
-   </div>
+<div class="mastfoot">
+   <a class="srtc-social-github" href="#"></a>
+   <a class="srtc-social-facebook" href="https://www.facebook.com/sococo"></a>
+   <a class="srtc-social-linkedin" href="http://www.linkedin.com/company/sococo"></a>
+   <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
 </div>
 
 <!-- Define the angular app controller -->
 <script type="text/javascript">
    function AppController($scope){
-      $scope.peers = ['Richard','Charles','Emily','Dr.Doom'];
-      $scope.userName = null;
+      $scope.localPeerId = '' + Math.floor(Math.random() * (1000000 - 5 + 1)) + 5;
+      console.log("My peer is : " + $scope.localPeerId);
+      $scope.peers = [];
+      $scope.initialized = true;
+      $scope.userName = "Unknown User";
       $scope.localVideo = null;
       var host = location.origin
          .replace(/^([a-zA-z]+):\/\//, '')
          .replace(/:(\d+)$/,":<%=pubsubport%>");
-      $scope.localPeer = new Sococo.RTC.PeerConnectionManager({
-         location:"demoRoom",
-         localId:"Demo User",
+      $scope.localPeer = new Sococo.RTC.LocalPeerConnection({
+         location:"rtc-demo",
+         localId:$scope.localPeerId,
          serverUrl:host,
          serverMount:"<%=pubsubmount%>"
       });
@@ -59,26 +63,35 @@
 <!-- Asynchronously load angular and the app. -->
 <script type="text/javascript">
    /* Based on: http://jeremyhixon.com/snippet/loading-javascript-files-asynchronously/ */
-   function asyncScriptLoad(url,success){
-      var script = document.createElement('script');
-      script.src = url;
-      script.async = !0;
-      var head = document.getElementsByTagName('head')[0];
-      script.onload = script.onreadystatechange = function(){
-         if (!!success && (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete')) {
-            success();
-            script.onload = script.onreadystatechange = null;
-            head.removeChild(script);
+   function loadScripts(urls,success){
+      var toLoad = urls.slice(0);
+      function _next(){
+         if(toLoad.length === 0){
+            return success && success();
          }
-      };
-      head.appendChild(script);
+         var url = toLoad.shift();
+         var script = document.createElement('script');
+         script.src = url;
+         script.async = !0;
+         var head = document.getElementsByTagName('head')[0];
+         script.onload = script.onreadystatechange = script.onerror = function(d){
+            if (!script.readyState || script.readyState == 'loaded' || script.readyState == 'complete') {
+               script.onerror = script.onload = script.onreadystatechange = null;
+               head.removeChild(script);
+               _next();
+            }
+         };
+         head.appendChild(script);
+      }
+      _next();
    }
    window.onload = function() {
-      asyncScriptLoad("js/faye-browser-min.js",function(){
-         asyncScriptLoad("app/sococo-rtc.min.js",function(){
-            asyncScriptLoad("//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js");
-         });
-      });
+      loadScripts([
+         "js/faye-browser-min.js",
+         "js/adapter.js",
+         "app/sococo-rtc.js",
+         "//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js"
+      ]);
    };
 </script>
 </body>

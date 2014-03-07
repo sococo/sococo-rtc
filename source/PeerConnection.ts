@@ -62,6 +62,7 @@ module Sococo.RTC {
          this.properties = props;
          this.pipe = this.config.pipe;
          var peerChannel = this.getPeerChannel();
+         console.warn("Subscribing to peer: \n",peerChannel);
          var sub = this.pipe.subscribe(peerChannel, (data) => {
             // Only process remote peer messages.
             if(data.userId !== this.config.localId){

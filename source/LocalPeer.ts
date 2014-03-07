@@ -5,7 +5,6 @@
 
 
 module Sococo.RTC {
-   declare var getUserMedia:any;
    declare var Faye:any;
 
    export interface PeerChannelProperties {
@@ -27,7 +26,7 @@ module Sococo.RTC {
     *
     * @extends {Sococo.Events}
     */
-   export class PeerConnectionManager extends Events {
+   export class LocalPeerConnection extends Events {
       config:PeerChannelProperties;
       private _peerConnections:any = {};
       private _properties:PeerProperties = {
@@ -83,6 +82,7 @@ module Sococo.RTC {
 
          // Negotiate an offer when the connection is ready.
          peer.on('ready',() => {
+            peer.off('ready',null,this);
             peer.negotiateProperties(this._properties);
          });
       }
@@ -122,10 +122,12 @@ module Sococo.RTC {
       private _onConnect(){
          var zoneChannel = this.getZoneChannel();
          var sub = this.pipe.subscribe(zoneChannel, (data) => {
-            this._handleZoneMessage(data);
+            if(data.userId !== this.config.localId){
+               this._handleZoneMessage(data);
+            }
          });
          sub.callback(() => {
-            console.log("Subscribed to peer channel: " + zoneChannel);
+            console.log("Subscribed to zone channel: " + zoneChannel);
             this.pipe.publish(zoneChannel, {
                type: "join",
                userId: this.config.localId
@@ -137,18 +139,21 @@ module Sococo.RTC {
       }
 
       private _handleZoneMessage(data) {
-         var zoneChannel = this.getZoneChannel();
          switch (data.type) {
             case "join":
+               console.log("User joined, send our ID - " + this.config.localId);
                this.pipe.publish(this.getZoneChannel(),{
                   type:'user',
                   userId:this.config.localId
                });
+               this.addPeer(data.userId);
                break;
             case "user":
+               console.log("Adding peer" + data.userId);
                this.addPeer(data.userId);
                break;
             case "leave":
+               console.log("Removing peer" + data.userId);
                this.removePeer(data.userId);
                break;
             default:
