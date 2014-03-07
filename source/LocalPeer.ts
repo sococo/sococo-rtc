@@ -120,11 +120,12 @@ module Sococo.RTC {
       //-----------------------------------------------------------------------
 
       private _onConnect(){
-         var zoneChannel = this.getZoneChannel()
+         var zoneChannel = this.getZoneChannel();
          var sub = this.pipe.subscribe(zoneChannel, (data) => {
             this._handleZoneMessage(data);
          });
          sub.callback(() => {
+            console.log("Subscribed to peer channel: " + zoneChannel);
             this.pipe.publish(zoneChannel, {
                type: "join",
                userId: this.config.localId

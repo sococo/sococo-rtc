@@ -30,7 +30,7 @@ a.active {
 }
 .active > a:hover,
 a:hover {
-   color: #fff;
+   color: #555;
    text-decoration: none;
    text-shadow: 1px 1px 0 rgba(20,20,20,0.3);
 }
