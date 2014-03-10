@@ -31,6 +31,29 @@ module Sococo.RTC {
       remoteId:string;// Unique ID for remote peer
    }
 
+   export interface IGlareMessage {
+
+      // The glare value for the generated message.
+      glare:number;
+
+      // The type of message to send.
+      type:string;
+
+      // The type of response message to glare check.
+      ackType:string;
+
+      // The callback to invoke when this message has been processed.
+      //
+      // `okay` If the first callback parameter is `true`, it means
+      // the message was acknowledged (or won the race). If `okay` is
+      // false, peer encountered a signal glare condition, and lost
+      // the race.  The message should be discarded because the other
+      // peer has sent a message of the same type that should take
+      // precedence.
+      callback:(okay:boolean,retry:boolean) => any;
+   }
+
+
    /**
     * A connection between the current user and a peer.  Allows p2p offer/answer
     * and negotiation of media streams between two users.
@@ -122,11 +145,6 @@ module Sococo.RTC {
          return this._glareValue != -1;
       }
 
-      private _rollGlareValue():number {
-         var min:number = 0;
-         var max:number = 2048;
-         return Math.floor(Math.random() * (max - min + 1)) + min;
-      }
 
       send(data:any){
          data = data || {};
@@ -250,12 +268,16 @@ module Sococo.RTC {
          var self = this;
          var offerCreated = (offer) => {
             this.connection.setLocalDescription(offer,() => {
-               self.send({
+               this._sendGlareMessage('offer','answer',{
                   type:'offer',
                   glare:this._glareValue,
                   offer: JSON.stringify(offer)
+               },(okay:boolean,retry:boolean) => {
+                  if(retry === true){
+                     this._negotiateRequest();
+                  }
+                  done && done(null,offer);
                });
-               done && done(null,offer);
             },offerError);
          };
          var offerError = (error) => {
@@ -271,7 +293,6 @@ module Sococo.RTC {
             this.connection.setLocalDescription(answer,() => {
                this.send({
                   type:'answer',
-                  glare:this._glareValue,
                   answer: JSON.stringify(answer)
                });
                done && done(null,answer);
@@ -301,20 +322,25 @@ module Sococo.RTC {
 
       _negotiateRequest(){
          console.warn("---> : Send (re)negotiation request");
-         this.send({
-            type:'negotiate'
+         this._sendGlareMessage('negotiate','negotiate-ack',null,(okay:boolean,retry:boolean) => {
+            if(okay === true){
+               this._negotiateGo();
+            }
+            else if(retry === true){
+               this._negotiateRequest();
+            }
          });
       }
 
-      _negotiateAcknowledge(data:any){
+      _negotiateAcknowledge(){
          console.warn("---> : Send (re)negotiation acknowledgement");
          this.send({
-            type:'negotiate-waiting'
+            type:'negotiate-ack'
          });
          this.createConnection();
       }
 
-      _negotiateGo(data:any){
+      _negotiateGo(data?:any){
          this.createConnection();
          if(this.localStream){
             this.connection.addStream(this.localStream);
@@ -325,6 +351,105 @@ module Sococo.RTC {
             }
          });
       }
+
+
+      //-----------------------------------------------------------------------
+      // Signal Glare resistant messaging
+      //-----------------------------------------------------------------------
+      private _glareQueue:IGlareMessage[] = [];
+
+      /**
+       * Generate a pseudo-random glare value between min and max.
+       * @returns {number} The generate glare value
+       * @private
+       */
+      private _rollGlareValue():number {
+         var min:number = 0;
+         var max:number = 2048;
+         return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      private _sendGlareMessage(type:string,ackType:string,data:any,done?:(okay:boolean,retry:boolean) => any){
+         // Don't allow duplicates based on message type.
+         for(var i:number = 0; i < this._glareQueue.length; i++){
+            if(this._glareQueue[i].type === type){
+               console.error("Attempted to send glare message while waiting for a glare ack of the same type");
+               return;
+            }
+         }
+
+         // Generate a glare value.
+         var glareRoll:number = this._rollGlareValue();
+
+         // Note: we index by ackType because we compare/discard/accept on receipt of the response.
+         this._glareQueue.push({
+            glare:glareRoll,
+            type:type,
+            ackType:ackType,
+            callback:done
+         });
+
+         console.warn("Send Glare Message (" + type + ") = " + glareRoll);
+         // Fire off the message.
+         this.send({
+            type:type,
+            data:data,
+            glare:glareRoll
+         });
+      }
+
+      /**
+       * Handle a message with a glare value attached to it.
+       * @param data The message to handle.
+       * @returns {Object|null}
+       * @private
+       */
+      private _handleGlareMessage(data:any):boolean{
+         var pending:IGlareMessage = null;
+         var index:number = -1;
+         for(var i:number = 0; i < this._glareQueue.length; i++){
+            if(this._glareQueue[i].ackType === data.type || this._glareQueue[i].type === data.type){
+               index = i;
+               pending = this._glareQueue[i];
+               break;
+            }
+         }
+
+         // If there is no pending glare ack for this type, or the type contains
+         // no glare information, return and let the default message handler take
+         // care of things.
+         if(index === -1 || !pending || typeof data.glare === 'undefined'){
+            return data;
+         }
+
+         // Received a response to the glare message type, safe to continue
+         // processing.
+         if(data.type === pending.ackType){
+            pending.callback(true,false);
+         }
+         // Received a conflicting message, need to compare glare values:
+         //
+         // If the glare values are equal, both sides generate new glare values and
+         // try again.
+         else if(data.glare === pending.glare){
+            console.warn("       DISCARDED " + pending.type + ": glare values matched.  Retry.");
+            pending.callback(false,true);
+         }
+         // If the remote message has a
+         else if(data.glare > pending.glare){
+            console.warn("       DISCARD LOCAL " + pending.type + ": " + data.glare  + " > " + pending.glare);
+            pending.callback(false,false);
+         }
+         else if(data.glare < pending.glare){
+            console.warn("       DISCARD REMOTE " + pending.type + ": " + data.glare  + " < " + pending.glare);
+            pending.callback(true,false);
+         }
+
+         // Remove the glare message now that we're done with it.
+         this._glareQueue.splice(index);
+         return null;
+      }
+
 
       //-----------------------------------------------------------------------
       // Ice Candidate Processing
@@ -358,28 +483,16 @@ module Sococo.RTC {
       // Messaging
       //-----------------------------------------------------------------------
       private _handlePeerMessage(data:any){
+         // Ignore glare rejects.
+         data = this._handleGlareMessage(data);
+         if(data === null){
+            return;
+         }
          switch(data.type){
             case "offer":
-               console.warn("<--- : Receive peer offer, glare=" + data.glare);
-               if(this.isOffering()){
-                  if(data.glare === this._glareValue){
-                     console.warn("       DISCARDED: glare values matched.  Retry.");
-                     this.createConnection();
-                     this.offer();
-                     return;
-                  }
-                  else if(data.glare > this._glareValue){
-                     console.warn("       DISCARD LOCAL: Signal Glare, old=" + this._glareValue);
-                     this.createConnection();
-                     this._glareValue = data.glare;
-                  }
-                  else if(data.glare < this._glareValue){
-                     console.warn("       DISCARD REMOTE: Signal Glare, old=" + this._glareValue);
-                     return;
-                  }
-
-               }
+               data = data.data;
                var offer = JSON.parse(<any>data.offer);
+               console.warn("<--- : Receive peer offer");
                this.answerWithProperties(offer,(err?) => {
                   if(typeof err === 'undefined'){
                      this._glareValue = data.glare;
@@ -390,17 +503,10 @@ module Sococo.RTC {
             case "answer":
                var answer = JSON.parse(data.answer);
                console.warn("<--- : Receive peer answer");
-               if(this.isOffering()){
-                  if(data.glare !== -1 && data.glare !== this._glareValue){
-                     console.warn("       DISCARDED: Signal Glare");
-                     return;
-                  }
-               }
                this.describeRemote(answer,(err?) => {
                   if(err){
                      console.error(err);
                   }
-                  this._glareValue = -1;
                });
                break;
             case "ice":
@@ -409,12 +515,13 @@ module Sococo.RTC {
                }
                break;
             case "negotiate":
+               data = data.data;
                console.warn("<--- : Receive peer (re)negotiation request");
                // Peer wants to negotiate a new connection.  acknowledge the request, replace
                // any existing RTCPeerConnection, and wait for a new offer.
-               this._negotiateAcknowledge(data);
+               this._negotiateAcknowledge();
                break;
-            case "negotiate-waiting":
+            case "negotiate-ack":
                console.warn("<--- : Receive peer (re)negotiation acknowledgment");
                // Peer is waiting for a new offer in response to a 'negotiate' request.  Create
                // a new RTCPeerConnection, and send an offer to the user.
