@@ -88,6 +88,8 @@ module Sococo.RTC {
       // of candidates until after setRemoteDescription is called.
       private _iceCandidateQueue:any[] = [];
 
+      private _heartbeatInterval:number;
+
       constructor(config:PeerConnectionConfig,props:PeerProperties){
          super();
          this.config = config;
@@ -103,6 +105,13 @@ module Sococo.RTC {
          });
          sub.callback(() => {
             //console.warn("Subscribed to peer channel: \n",peerChannel);
+
+            // Send a heartbeat so that our server doesn't think we've gone
+            // away.  Looking at you, Heroku.  Probably other servers too.
+            this._heartbeatInterval = setInterval(() => {
+               this.send({heartbeat:true});
+            },5000);
+
             this.createConnection();
             this.trigger('ready');
          });
