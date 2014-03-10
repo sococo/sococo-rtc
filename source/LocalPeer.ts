@@ -127,7 +127,7 @@ module Sococo.RTC {
             }
          });
          sub.callback(() => {
-            console.log("Subscribed to zone channel: " + zoneChannel);
+            //console.log("Subscribed to zone channel: " + zoneChannel);
             this.pipe.publish(zoneChannel, {
                type: "join",
                userId: this.config.localId
@@ -141,7 +141,7 @@ module Sococo.RTC {
       private _handleZoneMessage(data) {
          switch (data.type) {
             case "join":
-               console.log("User joined, send our ID - " + this.config.localId);
+               //console.log("User joined, send our ID - " + this.config.localId);
                this.pipe.publish(this.getZoneChannel(),{
                   type:'user',
                   userId:this.config.localId
@@ -149,11 +149,11 @@ module Sococo.RTC {
                this.addPeer(data.userId);
                break;
             case "user":
-               console.log("Adding peer" + data.userId);
+               //console.log("Adding peer" + data.userId);
                this.addPeer(data.userId);
                break;
             case "leave":
-               console.log("Removing peer" + data.userId);
+               //console.log("Removing peer" + data.userId);
                this.removePeer(data.userId);
                break;
             default:

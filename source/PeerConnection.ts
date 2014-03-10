@@ -54,7 +54,16 @@ module Sococo.RTC {
          optional: [{DtlsSrtpKeyAgreement: true }]
       };
 
-      private _offerGlareValue:number = -1;
+      private _glareValue:number = -1;
+
+      // Store a queue of ice candidates for processing.
+      // This is because candidates may not be added before setRemoteDescription
+      // has been called.  This usually works out as the offer will arrive before
+      // any candidates, and it will call setRemoteDescription, but sometimes it
+      // does not.   We can't guarantee that whatever signaling system you use
+      // will provide messages in the order sent, so we enforce delayed processing
+      // of candidates until after setRemoteDescription is called.
+      private _iceCandidateQueue:any[] = [];
 
       constructor(config:PeerConnectionConfig,props:PeerProperties){
          super();
@@ -62,7 +71,7 @@ module Sococo.RTC {
          this.properties = props;
          this.pipe = this.config.pipe;
          var peerChannel = this.getPeerChannel();
-         console.warn("Subscribing to peer: \n",peerChannel);
+         //console.warn("Subscribing to peer: \n",peerChannel);
          var sub = this.pipe.subscribe(peerChannel, (data) => {
             // Only process remote peer messages.
             if(data.userId !== this.config.localId){
@@ -70,7 +79,7 @@ module Sococo.RTC {
             }
          });
          sub.callback(() => {
-            console.warn("Subscribed to peer channel: \n",peerChannel);
+            //console.warn("Subscribed to peer channel: \n",peerChannel);
             this.createConnection();
             this.trigger('ready');
          });
@@ -82,6 +91,7 @@ module Sococo.RTC {
 
       // Re/initialize the RTCPeerConnection between `config.localId` and `config.remoteId` peers.
       createConnection(){
+         console.warn("----------------------- New RTCPeerConnection");
          this.destroyConnection();
          this.connection = new RTCPeerConnection(PCIceServers,this.constraints);
          this.connection.onaddstream = (event) => {
@@ -104,12 +114,12 @@ module Sococo.RTC {
          }
          this.trigger('updateStream',this.localStream);
          this.remoteStream = this.connection = null;
-         this._offerGlareValue = -1;
+         this._glareValue = -1;
       }
 
       // Signal glare handling.
       isOffering():boolean {
-         return this._offerGlareValue != -1;
+         return this._glareValue != -1;
       }
 
       private _rollGlareValue():number {
@@ -158,7 +168,7 @@ module Sococo.RTC {
          this._negotiateRequest();
       }
 
-      answerWithProperties(offer:IPeerOffer){
+      answerWithProperties(offer:IPeerOffer,done?:(error?) => void){
          var msg:string = "---> : Answering peer offer";
          if(!this.connection){
             this.createConnection();
@@ -170,7 +180,11 @@ module Sococo.RTC {
          console.warn(msg);
          this.describeRemote(offer,(err?) => {
             if(!err){
-               this.answer(offer);
+               this.answer(offer,done);
+            }
+            else{
+               console.error(err);
+               done && done(err);
             }
          });
       }
@@ -184,7 +198,7 @@ module Sococo.RTC {
          return '/' + inputs.sort().join('/');
       }
 
-      destroy(){
+      destroy() {
          if(this.connection){
             this.pipe && this.send({type:'close'});
             this.connection.close();
@@ -203,9 +217,10 @@ module Sococo.RTC {
 
       onIceCandidate(evt){
          var candidate = evt.candidate;
-         if(candidate){
+         if(candidate && this.isOffering()){
             this.send({
                type:'ice',
+               glare:this._glareValue,
                candidate: JSON.stringify(candidate)
             });
          }
@@ -227,16 +242,17 @@ module Sococo.RTC {
 
       offer(done?:(error?:any,offer?:any) => void, peerId:string=null){
          if(this.isOffering()){
+            console.error("Tried to send multiple peer offers at the same time.");
             return;
          }
-         this._offerGlareValue = this._rollGlareValue();
+         this._glareValue = this._rollGlareValue();
          var peerChannel = this.getPeerChannel();
          var self = this;
          var offerCreated = (offer) => {
             this.connection.setLocalDescription(offer,() => {
                self.send({
                   type:'offer',
-                  glare:this._offerGlareValue,
+                  glare:this._glareValue,
                   offer: JSON.stringify(offer)
                });
                done && done(null,offer);
@@ -255,7 +271,7 @@ module Sococo.RTC {
             this.connection.setLocalDescription(answer,() => {
                this.send({
                   type:'answer',
-                  glare:this._offerGlareValue,
+                  glare:this._glareValue,
                   answer: JSON.stringify(answer)
                });
                done && done(null,answer);
@@ -269,21 +285,13 @@ module Sococo.RTC {
       }
 
       describeLocal(offer, done?:(error?) => void) {
-         var descCreated = () => {
-            done && done();
-         };
-         var descError = (error) => {
-            done && done(error);
-         };
+         var descCreated = () => { done && done(); };
+         var descError = (error) => { done && done(error); };
          this.connection.setLocalDescription(new RTCSessionDescription(offer),descCreated,descError);
       }
       describeRemote(offer, done?:(error?) => void) {
-         var descCreated = () => {
-            done && done();
-         };
-         var descError = (error) => {
-            done && done(error);
-         };
+         var descCreated = () => { done && done(); };
+         var descError = (error) => { done && done(error); };
          this.connection.setRemoteDescription(new RTCSessionDescription(offer),descCreated,descError);
       }
 
@@ -319,49 +327,85 @@ module Sococo.RTC {
       }
 
       //-----------------------------------------------------------------------
+      // Ice Candidate Processing
+      //  - Handle race conditions with offer by queuing ice candidates
+      //    until setRemoteDescription is called.
+      //-----------------------------------------------------------------------
+      private _processIceQueue(){
+         var queue = this._iceCandidateQueue;
+         for(var i:number = 0; i < queue.length; i++){
+            var msg = queue[i];
+            this._handleIceCandidate(msg);
+         }
+         this._iceCandidateQueue = [];
+      }
+
+      private _handleIceCandidate(data:any){
+         var candidate = JSON.parse(data.candidate);
+         if(candidate && data.glare === this._glareValue){
+            try{
+               this.connection.addIceCandidate(new RTCIceCandidate(candidate));
+               return true;
+            }
+            catch(e){
+               console.error("Failed candidate --- " + candidate, e);
+            }
+         }
+         return false;
+      }
+
+      //-----------------------------------------------------------------------
       // Messaging
       //-----------------------------------------------------------------------
-
       private _handlePeerMessage(data:any){
          switch(data.type){
             case "offer":
                console.warn("<--- : Receive peer offer, glare=" + data.glare);
                if(this.isOffering()){
-                  if(data.glare === this._offerGlareValue){
+                  if(data.glare === this._glareValue){
                      console.warn("       DISCARDED: glare values matched.  Retry.");
+                     this.createConnection();
                      this.offer();
                      return;
-                  }else if(data.glare > this._offerGlareValue){
-                     this._offerGlareValue = data.glare;
-                     console.warn("       DISCARDED: Signal Glare, old=" + this._offerGlareValue);
+                  }
+                  else if(data.glare > this._glareValue){
+                     console.warn("       DISCARD LOCAL: Signal Glare, old=" + this._glareValue);
+                     this.createConnection();
+                     this._glareValue = data.glare;
+                  }
+                  else if(data.glare < this._glareValue){
+                     console.warn("       DISCARD REMOTE: Signal Glare, old=" + this._glareValue);
                      return;
                   }
+
                }
                var offer = JSON.parse(<any>data.offer);
-               this.answerWithProperties(offer);
+               this.answerWithProperties(offer,(err?) => {
+                  if(typeof err === 'undefined'){
+                     this._glareValue = data.glare;
+                     this._processIceQueue();
+                  }
+               });
                break;
             case "answer":
                var answer = JSON.parse(data.answer);
                console.warn("<--- : Receive peer answer");
                if(this.isOffering()){
-                  if(data.glare !== -1 && data.glare !== this._offerGlareValue){
+                  if(data.glare !== -1 && data.glare !== this._glareValue){
                      console.warn("       DISCARDED: Signal Glare");
                      return;
                   }
                }
-               this.connection.setRemoteDescription(new RTCSessionDescription(answer));
-               this._offerGlareValue = -1;
+               this.describeRemote(answer,(err?) => {
+                  if(err){
+                     console.error(err);
+                  }
+                  this._glareValue = -1;
+               });
                break;
             case "ice":
-               var candidate = JSON.parse(data.candidate);
-               if(candidate){
-                  try{
-                     this.connection.addIceCandidate(new RTCIceCandidate(candidate));
-                  }
-                  catch(e){
-                     console.error("Failed candidate --- " + candidate, e);
-                  }
-
+               if(!this._handleIceCandidate(data)){
+                  this._iceCandidateQueue.push(data);
                }
                break;
             case "negotiate":
