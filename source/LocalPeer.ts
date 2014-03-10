@@ -60,7 +60,7 @@ module Sococo.RTC {
          }
          var peer:PeerConnection = this._peerConnections[userId];
          if(typeof peer !== 'undefined'){
-            return;
+            this._peerConnections[userId].destroy();
          }
          peer = this._peerConnections[userId] = new PeerConnection({
             pipe: this.pipe,
