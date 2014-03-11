@@ -7,6 +7,9 @@
 module Sococo.RTC {
    declare var Faye:any;
 
+   //--------------------------------------------------------------------------
+   // Application Interfaces
+   //--------------------------------------------------------------------------
    export interface PeerChannelProperties {
       location:string;
       localId:string;
@@ -28,7 +31,9 @@ module Sococo.RTC {
     */
    export class LocalPeerConnection extends Events {
       config:PeerChannelProperties;
-      private _peerConnections:any = {};
+      peers:{
+         [id:string]:Sococo.RTC.PeerConnection
+      } = {};
       private _properties:PeerProperties = {
          sendVideo:false,
          sendAudio:false,
@@ -54,30 +59,30 @@ module Sococo.RTC {
          var host = this.config.serverUrl || 'localhost:4202';
          return protocol + host + (this.config.serverMount || '/');
       }
-      addPeer(userId:string){
-         if(userId === this.config.localId){
+      addPeer(remoteId:string){
+         if(remoteId === this.config.localId){
             return;
          }
-         var peer:PeerConnection = this._peerConnections[userId];
+         var peer:PeerConnection = this.peers[remoteId];
          if(typeof peer !== 'undefined'){
-            this._peerConnections[userId].destroy();
+            this.peers[remoteId].destroy();
          }
-         peer = this._peerConnections[userId] = new PeerConnection({
+         peer = this.peers[remoteId] = new PeerConnection({
             pipe: this.pipe,
             zoneId: this.config.location,
             localId: this.config.localId,
-            remoteId: userId
+            remoteId: remoteId
          }, this._properties);
 
          // Bubble up add/remove stream messages for the UI to key off of.
          peer.on('addStream',(stream) => {
-            this.trigger('addStream',{ stream: stream, userId:userId });
+            this.trigger('addStream',{ stream: stream, userId:remoteId });
          });
          peer.on('removeStream',(stream) => {
-            this.trigger('removeStream',{ stream: stream, userId:userId });
+            this.trigger('removeStream',{ stream: stream, userId:remoteId });
          });
          peer.on('updateStream',(stream) => {
-            this.trigger('updateStream',{stream:stream,userId:userId});
+            this.trigger('updateStream',{stream:stream,userId:remoteId});
          });
 
          // Negotiate an offer when the connection is ready.
@@ -85,28 +90,33 @@ module Sococo.RTC {
             peer.off('ready',null,this);
             peer.negotiateProperties(this._properties);
          });
+
+         // Remove peers that timeout
+         peer.on('timeout',() => {
+            console.warn("Peer Timeout: " + remoteId);
+            peer.off();
+            this.removePeer(remoteId);
+         });
+
       }
-      removePeer(userId:string){
-         // Iterate over our peer connections and prune any that aren't valid users.
-         for(var key in this._peerConnections){
-            if(this._peerConnections.hasOwnProperty(key)){
-               var pc:PeerConnection = this._peerConnections[key];
-               if(pc.config.remoteId !== userId){
-                  return;
-               }
-               pc.off();
-               pc.destroy();
-               delete this._peerConnections[key];
-            }
+
+      removePeer(remoteId:string){
+         var pc:PeerConnection = this.peers[remoteId];
+         if(!pc){
+            return;
          }
+         pc.destroy();
+         pc.off();
+         delete this.peers[remoteId];
       }
 
       destroy(){
-         for(var key in this._peerConnections){
-            if(this._peerConnections.hasOwnProperty(key)){
-               this._peerConnections[key].destroy();
+         for(var key in this.peers){
+            if(this.peers.hasOwnProperty(key)){
+               this.peers[key].destroy();
             }
          }
+         this.peers = {};
 
          this.pipe.publish(this.getZoneChannel(),{
             type:'leave',

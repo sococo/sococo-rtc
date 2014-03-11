@@ -17,7 +17,7 @@ module Sococo.RTC {
          createIceServer("stun:stun3.l.google.com:19302"),
          createIceServer("stun:stun4.l.google.com:19302")
       ]
-   };
+   }
 
    export interface IPeerOffer {
       sdp:string;
@@ -89,6 +89,8 @@ module Sococo.RTC {
       private _iceCandidateQueue:any[] = [];
 
       private _heartbeatInterval:number;
+      private _heartbeatMissed:boolean = false;
+      private _heartbeatMissCount:number = 0;
 
       constructor(config:PeerConnectionConfig,props:PeerProperties){
          super();
@@ -105,14 +107,8 @@ module Sococo.RTC {
          });
          sub.callback(() => {
             //console.warn("Subscribed to peer channel: \n",peerChannel);
-
-            // Send a heartbeat so that our server doesn't think we've gone
-            // away.  Looking at you, Heroku.  Probably other servers too.
-            this._heartbeatInterval = setInterval(() => {
-               this.send({heartbeat:true});
-            },5000);
-
             this.createConnection();
+            this.send({type:"ready"});
             this.trigger('ready');
          });
          sub.errback(() => {
@@ -145,7 +141,7 @@ module Sococo.RTC {
             this.trigger('removeStream',this.remoteStream);
          }
          this.trigger('updateStream',this.localStream);
-         this.remoteStream = this.connection = null;
+         this.remoteStream = null;
          this._glareValue = -1;
       }
 
@@ -226,15 +222,24 @@ module Sococo.RTC {
       }
 
       destroy() {
-         if(this.connection){
+         if(this.pipe){
             this.pipe && this.send({type:'close'});
+            this.pipe.unsubscribe(this.getPeerChannel());
+            this.pipe = null;
+         }
+         if(this.connection){
             this.connection.close();
             this.connection = null;
-            if(this.remoteStream){
-               this.trigger('removeStream',this.remoteStream);
-               this.remoteStream = null;
-            }
          }
+         if(typeof this._heartbeatInterval !== 'undefined'){
+            clearInterval(this._heartbeatInterval);
+            this._heartbeatInterval = null;
+         }
+         if(this.remoteStream){
+            this.trigger('removeStream',this.remoteStream);
+            this.remoteStream = null;
+         }
+         this.localStream = null;
       }
 
       updateConstraints() {
@@ -523,19 +528,47 @@ module Sococo.RTC {
                   this._iceCandidateQueue.push(data);
                }
                break;
+            // Peer wants to negotiate a new connection.  acknowledge the request, replace
+            // any existing RTCPeerConnection, and wait for a new offer.
             case "negotiate":
                data = data.data;
                console.warn("<--- : Receive peer (re)negotiation request");
-               // Peer wants to negotiate a new connection.  acknowledge the request, replace
-               // any existing RTCPeerConnection, and wait for a new offer.
                this._negotiateAcknowledge();
                break;
+            // Peer is waiting for a new offer in response to a 'negotiate' request.  Create
+            // a new RTCPeerConnection, and send an offer to the user.
             case "negotiate-ack":
                console.warn("<--- : Receive peer (re)negotiation acknowledgment");
-               // Peer is waiting for a new offer in response to a 'negotiate' request.  Create
-               // a new RTCPeerConnection, and send an offer to the user.
                this._negotiateGo(data);
                break;
+
+            // Ready signals that the peer has also subscribed to the pubsub channel.
+            case "ready":
+               if(!this._heartbeatInterval){
+                  this._heartbeatMissCount = 0;
+                  this._heartbeatMissed = false;
+                  // Send a heartbeat so that our server doesn't think we've gone
+                  // away.  Looking at you, Heroku.  Probably other servers too.
+                  this._heartbeatInterval = setInterval(() => {
+                     if(this._heartbeatMissed !== false){
+                        this._heartbeatMissCount++;
+                     }
+                     this._heartbeatMissed = true;
+                     if(this._heartbeatMissCount > 2){
+                        this.send({type:"close"});
+                        this.trigger("timeout");
+                     }
+                     else {
+                        this.send({type:"heartbeat"});
+                     }
+                  },5000);
+               }
+               break;
+            case "heartbeat":
+               this._heartbeatMissCount = 0;
+               this._heartbeatMissed = false;
+               break;
+            // Close signals that the peer is forcing a disconnect of the connection.
             case "close":
                if(this.remoteStream){
                   this.trigger("removeStream",this.remoteStream);
