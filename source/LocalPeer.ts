@@ -6,6 +6,7 @@
 
 module Sococo.RTC {
    declare var Faye:any;
+   declare var getUserMedia:any;
 
    //--------------------------------------------------------------------------
    // Application Interfaces
@@ -34,12 +35,14 @@ module Sococo.RTC {
       peers:{
          [id:string]:Sococo.RTC.PeerConnection
       } = {};
-      private _properties:PeerProperties = {
+      properties:PeerProperties = {
          sendVideo:false,
          sendAudio:false,
          receiveVideo:true,
          receiveAudio:true
       };
+      localStream:LocalMediaStream = null;
+
       pipe:any; // TODO: Faye.Client in DefinitelyTyped?
       constructor(config:PeerChannelProperties){
          super();
@@ -59,6 +62,11 @@ module Sococo.RTC {
          var host = this.config.serverUrl || 'localhost:4202';
          return protocol + host + (this.config.serverMount || '/');
       }
+
+
+      //-----------------------------------------------------------------------
+      // Peer Management functions
+
       addPeer(remoteId:string){
          if(remoteId === this.config.localId){
             return;
@@ -72,7 +80,7 @@ module Sococo.RTC {
             zoneId: this.config.location,
             localId: this.config.localId,
             remoteId: remoteId
-         }, this._properties);
+         }, this.properties);
 
          // Bubble up add/remove stream messages for the UI to key off of.
          peer.on('addStream',(stream) => {
@@ -88,7 +96,7 @@ module Sococo.RTC {
          // Negotiate an offer when the connection is ready.
          peer.on('ready',() => {
             peer.off('ready',null,this);
-            peer.negotiateProperties(this._properties);
+            peer.negotiateProperties(this.properties);
          });
 
          // Remove peers that timeout
@@ -98,9 +106,13 @@ module Sococo.RTC {
             this.removePeer(remoteId);
          });
 
+         console.warn("--------------Add Peer " + remoteId);
+         this.trigger('addPeer',peer);
+
       }
 
       removePeer(remoteId:string){
+         console.warn("--------------Remove Peer " + remoteId);
          var pc:PeerConnection = this.peers[remoteId];
          if(!pc){
             return;
@@ -108,6 +120,57 @@ module Sococo.RTC {
          pc.destroy();
          pc.off();
          delete this.peers[remoteId];
+         this.trigger('removePeer',pc);
+      }
+
+      //-----------------------------------------------------------------------
+
+      dirtyProperties() {
+         var props:PeerProperties = this.properties;
+         var needBroadcast:boolean = props.sendAudio === true || props.sendVideo === true;
+         var removedStream:boolean = false;
+         var addedStream:boolean = false;
+         var _syncProperties = () => {
+            // Iterate over our peer connections and prune any that aren't valid users.
+            for(var key in this.peers){
+               if(this.peers.hasOwnProperty(key)){
+                  var pc:PeerConnection = this.peers[key];
+                  pc.setLocalStream(this.localStream);
+                  pc.negotiateProperties(props);
+               }
+            }
+         };
+
+         if(needBroadcast){
+            var constrainedMedia = {
+               video:this.properties.sendVideo,
+               audio:this.properties.sendAudio
+            };
+            getUserMedia(constrainedMedia, (stream) => {
+               addedStream = true;
+               this.localStream = stream;
+               this.trigger('addStream',{
+                  stream: stream,
+                  userId:this.config.localId,
+                  local:true
+               });
+               _syncProperties();
+            },(error) => { console.error(error); });
+         }
+         else {
+            if(this.localStream){
+               this.trigger("removeStream",{
+                  stream: this.localStream,
+                  userId:this.config.localId,
+                  local:true
+               });
+               if(this.localStream.stop){
+                  this.localStream.stop();
+               }
+               this.localStream = null;
+            }
+            _syncProperties();
+         }
       }
 
       destroy(){
