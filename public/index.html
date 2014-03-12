@@ -25,7 +25,7 @@
 <div class="cover-container">
    <div class="user-container">
       <span class="srtc-fontawesome-webfont self" title="You"></span>
-      <span class="srtc-fontawesome-webfont"
+      <span class="srtc-fontawesome-webfont ng-hide"
             title="Peer-{{id}}"
             ng-repeat="(id,peer) in localPeer.peers">
       </span>
@@ -40,7 +40,7 @@
              ng-show="localPeer.localStream"
              localPeer="localPeer">
       </video>
-      <video class="rtc-panel-drop"
+      <video class="rtc-panel-drop ng-hide"
              sc-peer
              ng-hide="peer.remoteStream.ended || !peer.remoteStream"
              peer="peer"
