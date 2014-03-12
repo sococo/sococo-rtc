@@ -72,8 +72,12 @@ a.active:hover {
 }
 .masthead-brand h2 {
    margin:0;
+   font-weight:200;
 }
 
+.masthead-brand h2 > a:hover {
+   color:#6f5499;
+}
 
 ul.controls {
    padding:0;
@@ -127,9 +131,10 @@ ul.controls > li > a:focus {
 .cover video {
    max-width:320px;
    max-height:320px;
-   min-width:320px;
-   min-height:320px;
+   min-width:100px;
+   min-height:100px;
    display: inline-block;
+   margin:10px;
 }
 
 /*
