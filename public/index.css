@@ -75,6 +75,9 @@ a.active:hover {
    font-weight:200;
 }
 
+.masthead-brand h2 > a {
+   color:#fff;
+}
 .masthead-brand h2 > a:hover {
    color:#6f5499;
 }
