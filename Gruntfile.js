@@ -16,13 +16,19 @@ module.exports = function(grunt) {
             comments:true,
             base_path: "source/"
          },
-         app: {
+         lib: {
             src: [
-               "source/Events.ts",
-               "source/MeshPeerManager.ts",
-               "source/PeerConnection.ts"
+               "source/lib/Events.ts",
+               "source/lib/LocalPeer.ts",
+               "source/lib/PeerConnection.ts"
             ],
             dest: 'public/app/sococo-rtc.js'
+         },
+         app: {
+            src: [
+               "source/app/*.ts"
+            ],
+            dest: 'public/app/sococo-rtc-app.js'
          }
       },
       concat: {
@@ -40,10 +46,13 @@ module.exports = function(grunt) {
          app: {
             options: {
                sourceMap: true,
-               sourceMapName: 'public/app/sococo-rtc.min.js.map'
+               sourceMapName: 'public/app/app.js.map'
             },
             files: {
-               'public/app/sococo-rtc.min.js': ['public/app/sococo-rtc.js']
+               'public/app/app.js': [
+                  'public/app/sococo-rtc.js',
+                  'public/app/sococo-rtc-app.js'
+               ]
             }
          }
       },
@@ -58,9 +67,13 @@ module.exports = function(grunt) {
 
       // Watch for changes and trigger associated tasks.
       watch: {
-         scripts: {
-            files: ['source/*.ts'],
-            tasks: ['typescript','uglify']
+         lib: {
+            files: ['source/lib/*.ts'],
+            tasks: ['typescript:lib']
+         },
+         app: {
+            files: ['source/app/*.ts'],
+            tasks: ['typescript:app']
          },
          styles: {
             files: ['<%= concat.styles.src %>'],

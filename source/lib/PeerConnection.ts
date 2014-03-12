@@ -1,5 +1,5 @@
-/// <reference path="./types/MediaStream.d.ts"/>
-/// <reference path="./types/RTCPeerConnection.d.ts"/>
+/// <reference path="./../types/MediaStream.d.ts"/>
+/// <reference path="../types/RTCPeerConnection.d.ts"/>
 /// <reference path="./Events.ts" />
 /// <reference path="./LocalPeer.ts" />
 
@@ -9,6 +9,26 @@ module Sococo.RTC {
       createIceServer = function(a,b,c){};
    }
 
+   export interface RTCIceServer {
+
+      /**
+       * @property {string|string[]} urls STUN or TURN URI(s) as defined in [STUN-URI] and [TURN-URI] or other URI types.
+       */
+         urls:any;
+      /**
+       * If this RTCIceServer object represents a TURN server, then this attribute specifies the username to use with that TURN server.
+       */
+         username:string;
+
+      /**
+       * If this RTCIceServer object represents a TURN server, then this attribute specifies the credential to use with that TURN server.
+       */
+         credential:string;
+   }
+
+   //--------------------------------------------------------------------------
+   // ICE servers.  No TURN servers, just public Google STUN.
+   //--------------------------------------------------------------------------
    export var PCIceServers = {
       'iceServers': [
          createIceServer("stun:stun.l.google.com:19302"),
@@ -29,6 +49,7 @@ module Sococo.RTC {
       zoneId:string;  // Unique ID for zone
       localId:string; // Unique ID for local peer
       remoteId:string;// Unique ID for remote peer
+      localStream?:LocalMediaStream;
    }
 
    export interface IGlareMessage {
@@ -97,6 +118,7 @@ module Sococo.RTC {
          this.config = config;
          this.properties = props;
          this.pipe = this.config.pipe;
+         this.localStream = typeof config.localStream !== 'undefined' ? config.localStream : null;
          var peerChannel = this.getPeerChannel();
          //console.warn("Subscribing to peer: \n",peerChannel);
          var sub = this.pipe.subscribe(peerChannel, (data) => {
@@ -108,8 +130,6 @@ module Sococo.RTC {
          sub.callback(() => {
             //console.warn("Subscribed to peer channel: \n",peerChannel);
             this.createConnection();
-            this.send({type:"ready"});
-            this.trigger('ready');
          });
          sub.errback(() => {
             console.error("failed to subscribe to",peerChannel);
@@ -119,8 +139,9 @@ module Sococo.RTC {
 
       // Re/initialize the RTCPeerConnection between `config.localId` and `config.remoteId` peers.
       createConnection(){
-         console.warn("----------------------- New RTCPeerConnection");
+         console.warn("----------------------- New RTCPeerConnection " + (this.localStream !== null ? " (broadcast)" : ""));
          this.destroyConnection();
+         this._glareQueue.length = 0;
          this.connection = new RTCPeerConnection(PCIceServers,this.constraints);
          this.connection.onaddstream = (event) => {
             this.onAddStream(event);
@@ -131,6 +152,10 @@ module Sococo.RTC {
          this.connection.onremovestream = (event) => {
             this.onRemoveStream(event);
          };
+         if(this.localStream !== null){
+            this.connection.addStream(this.localStream);
+         }
+         this.send({type:"ready"});
       }
       destroyConnection(){
          if(this.connection){
@@ -140,9 +165,9 @@ module Sococo.RTC {
          if(this.remoteStream){
             this.trigger('removeStream',this.remoteStream);
          }
-         this.trigger('updateStream',this.localStream);
          this.remoteStream = null;
          this._glareValue = -1;
+         this._glareQueue.length = 0;
       }
 
       // Signal glare handling.
@@ -157,21 +182,6 @@ module Sococo.RTC {
          this.pipe.publish(this.getPeerChannel(),data);
       }
 
-      setLocalStream(stream:LocalMediaStream) {
-         if(stream == this.localStream){
-            return;
-         }
-         var oldStream:LocalMediaStream = this.localStream;
-         this.localStream = stream;
-         if(this.connection){
-            if(oldStream){
-               this.connection.removeStream(oldStream);
-            }
-            if(this.localStream){
-               this.connection.addStream(stream);
-            }
-         }
-      }
       // Properties changed, create a new PeerConnection/Offer with the desired properties.
       // The Peer should answer with their given properties.
       negotiateProperties(props:PeerProperties){
@@ -196,12 +206,12 @@ module Sococo.RTC {
          if(!this.connection){
             this.createConnection();
          }
-         if(this.localStream && this.connection){
-            this.connection.addStream(this.localStream);
+         if(this.localStream){
             msg += " (broadcast)";
          }
          console.warn(msg);
          this.describeRemote(offer,(err?) => {
+            this._processIceQueue();
             if(!err){
                this.answer(offer,done);
             }
@@ -236,7 +246,7 @@ module Sococo.RTC {
             this._heartbeatInterval = null;
          }
          if(this.remoteStream){
-            this.trigger('removeStream',this.remoteStream);
+            this.trigger('removeStream',{stream:this.remoteStream,userId:this.config.remoteId});
             this.remoteStream = null;
          }
          this.localStream = null;
@@ -264,11 +274,11 @@ module Sococo.RTC {
          // up on destruction.
          console.warn('--- Add Remote Stream');
          this.remoteStream = evt.stream;
-         this.trigger('addStream',evt.stream);
+         this.trigger('addStream',{stream:evt.stream,userId:this.config.remoteId});
       }
       onRemoveStream(evt) {
          console.warn('--- Remove Remote Stream');
-         this.trigger('removeStream',evt.stream);
+         this.trigger('removeStream',{stream:evt.stream,userId:this.config.remoteId});
          this.remoteStream = null;
       }
 
@@ -277,21 +287,18 @@ module Sococo.RTC {
             console.error("Tried to send multiple peer offers at the same time.");
             return;
          }
+         console.warn("---> : Send peer offer");
          this._glareValue = this._rollGlareValue();
          var peerChannel = this.getPeerChannel();
          var self = this;
          var offerCreated = (offer) => {
             this.connection.setLocalDescription(offer,() => {
-               this._sendGlareMessage('offer','answer',{
+               this.send({
                   type:'offer',
                   glare:this._glareValue,
                   offer: JSON.stringify(offer)
-               },(okay:boolean,retry:boolean) => {
-                  if(retry === true){
-                     this._negotiateRequest();
-                  }
-                  done && done(null,offer);
                });
+               done && done(null,offer);
             },offerError);
          };
          var offerError = (error) => {
@@ -356,9 +363,6 @@ module Sococo.RTC {
 
       _negotiateGo(data?:any){
          this.createConnection();
-         if(this.localStream){
-            this.connection.addStream(this.localStream);
-         }
          this.offer((error?:any,offer?:any) => {
             if(error) {
                console.error(error);
@@ -440,6 +444,7 @@ module Sococo.RTC {
          // processing.
          if(data.type === pending.ackType){
             pending.callback(true,false);
+            return data;
          }
          // Received a conflicting message, need to compare glare values:
          //
@@ -452,11 +457,14 @@ module Sococo.RTC {
          // If the remote message has a
          else if(data.glare > pending.glare){
             console.warn("       DISCARD LOCAL " + pending.type + ": " + data.glare  + " > " + pending.glare);
+            this._glareQueue.splice(index);
             pending.callback(false,false);
+            return data;
          }
          else if(data.glare < pending.glare){
             console.warn("       DISCARD REMOTE " + pending.type + ": " + data.glare  + " < " + pending.glare);
-            pending.callback(true,false);
+            //pending.callback(true,false);
+            return null;
          }
 
          // Remove the glare message now that we're done with it.
@@ -479,10 +487,11 @@ module Sococo.RTC {
          this._iceCandidateQueue = [];
       }
 
-      private _handleIceCandidate(data:any){
+      private _handleIceCandidate(data:any):boolean{
          var candidate = JSON.parse(data.candidate);
-         if(candidate && data.glare === this._glareValue){
+         if(candidate && this.connection && data.glare === this._glareValue){
             try{
+               console.warn("Add Ice Candidate --- " + candidate);
                this.connection.addIceCandidate(new RTCIceCandidate(candidate));
                return true;
             }
@@ -504,13 +513,15 @@ module Sococo.RTC {
          }
          switch(data.type){
             case "offer":
-               data = data.data;
                var offer = JSON.parse(<any>data.offer);
                console.warn("<--- : Receive peer offer");
+               this._glareValue = data.glare;
                this.answerWithProperties(offer,(err?) => {
-                  if(typeof err === 'undefined'){
-                     this._glareValue = data.glare;
-                     this._processIceQueue();
+                  if(!err){
+                     console.warn("Connection established.");
+                  }
+                  else {
+                     console.error('' + err);
                   }
                });
                break;
@@ -520,6 +531,9 @@ module Sococo.RTC {
                this.describeRemote(answer,(err?) => {
                   if(err){
                      console.error(err);
+                  }
+                  else {
+                     console.warn("Connection established.");
                   }
                });
                break;
@@ -545,6 +559,8 @@ module Sococo.RTC {
             // Ready signals that the peer has also subscribed to the pubsub channel.
             case "ready":
                if(!this._heartbeatInterval){
+                  console.warn("<--- : Peer reports ready, setting up heartbeat.");
+                  this.trigger('ready');
                   this._heartbeatMissCount = 0;
                   this._heartbeatMissed = false;
                   // Send a heartbeat so that our server doesn't think we've gone
@@ -565,13 +581,14 @@ module Sococo.RTC {
                }
                break;
             case "heartbeat":
+               console.warn("<--- : HEARTBEAT");
                this._heartbeatMissCount = 0;
                this._heartbeatMissed = false;
                break;
             // Close signals that the peer is forcing a disconnect of the connection.
             case "close":
                if(this.remoteStream){
-                  this.trigger("removeStream",this.remoteStream);
+                  this.trigger("removeStream",{stream:this.remoteStream,userId:this.config.remoteId});
                   this.remoteStream = null;
                }
                break;

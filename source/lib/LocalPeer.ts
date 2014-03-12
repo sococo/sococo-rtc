@@ -1,5 +1,5 @@
-/// <reference path="./types/MediaStream.d.ts"/>
-/// <reference path="./types/RTCPeerConnection.d.ts"/>
+/// <reference path="./../types/MediaStream.d.ts"/>
+/// <reference path="../types/RTCPeerConnection.d.ts"/>
 /// <reference path="./Events.ts" />
 /// <reference path="./PeerConnection.ts" />
 
@@ -67,7 +67,7 @@ module Sococo.RTC {
       //-----------------------------------------------------------------------
       // Peer Management functions
 
-      addPeer(remoteId:string){
+      addPeer(remoteId:string,negotiate:boolean=false){
          if(remoteId === this.config.localId){
             return;
          }
@@ -79,25 +79,17 @@ module Sococo.RTC {
             pipe: this.pipe,
             zoneId: this.config.location,
             localId: this.config.localId,
+            localStream:this.localStream || null,
             remoteId: remoteId
          }, this.properties);
 
-         // Bubble up add/remove stream messages for the UI to key off of.
-         peer.on('addStream',(stream) => {
-            this.trigger('addStream',{ stream: stream, userId:remoteId });
-         });
-         peer.on('removeStream',(stream) => {
-            this.trigger('removeStream',{ stream: stream, userId:remoteId });
-         });
-         peer.on('updateStream',(stream) => {
-            this.trigger('updateStream',{stream:stream,userId:remoteId});
-         });
-
          // Negotiate an offer when the connection is ready.
-         peer.on('ready',() => {
-            peer.off('ready',null,this);
-            peer.negotiateProperties(this.properties);
-         });
+         if(negotiate === true){
+            peer.on('ready',() => {
+               peer.off('ready',null,this);
+               peer.negotiateProperties(this.properties);
+            });
+         }
 
          // Remove peers that timeout
          peer.on('timeout',() => {
@@ -121,6 +113,7 @@ module Sococo.RTC {
          pc.off();
          delete this.peers[remoteId];
          this.trigger('removePeer',pc);
+         pc = null;
       }
 
       //-----------------------------------------------------------------------
@@ -128,14 +121,12 @@ module Sococo.RTC {
       dirtyProperties() {
          var props:PeerProperties = this.properties;
          var needBroadcast:boolean = props.sendAudio === true || props.sendVideo === true;
-         var removedStream:boolean = false;
-         var addedStream:boolean = false;
          var _syncProperties = () => {
             // Iterate over our peer connections and prune any that aren't valid users.
             for(var key in this.peers){
                if(this.peers.hasOwnProperty(key)){
                   var pc:PeerConnection = this.peers[key];
-                  pc.setLocalStream(this.localStream);
+                  pc.localStream = this.localStream;
                   pc.negotiateProperties(props);
                }
             }
@@ -147,23 +138,13 @@ module Sococo.RTC {
                audio:this.properties.sendAudio
             };
             getUserMedia(constrainedMedia, (stream) => {
-               addedStream = true;
                this.localStream = stream;
-               this.trigger('addStream',{
-                  stream: stream,
-                  userId:this.config.localId,
-                  local:true
-               });
                _syncProperties();
+               this.trigger('updateStream');
             },(error) => { console.error(error); });
          }
          else {
             if(this.localStream){
-               this.trigger("removeStream",{
-                  stream: this.localStream,
-                  userId:this.config.localId,
-                  local:true
-               });
                if(this.localStream.stop){
                   this.localStream.stop();
                }
@@ -172,6 +153,21 @@ module Sococo.RTC {
             _syncProperties();
          }
       }
+
+
+      getVideoConstraints():any{
+         var resolution = {
+            mandatory: {
+               minWidth: 320,
+               minHeight: 180,
+               maxWidth: 320,
+               maxHeight: 180
+            },
+            "optional": []
+         };
+         return !this.properties.sendVideo ? false : resolution;
+      }
+
 
       destroy(){
          for(var key in this.peers){
@@ -222,8 +218,8 @@ module Sococo.RTC {
                this.addPeer(data.userId);
                break;
             case "user":
-               //console.log("Adding peer" + data.userId);
-               this.addPeer(data.userId);
+               console.warn("MSG: User");
+               this.addPeer(data.userId,true);
                break;
             case "leave":
                //console.log("Removing peer" + data.userId);
