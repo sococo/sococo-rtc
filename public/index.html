@@ -6,8 +6,8 @@
    <meta name="description" content="Sococo.RTC">
    <meta name="author" content="Social Communications Company">
    <title>Sococo RTC Playground</title>
-   <link href="./app/sococo-rtc.min.css" rel="stylesheet">
-<body ng-controller="SococoRTCApp" ng-init="init('<%=pubsubport%>','<%=pubsubmount%>')" >
+   <link href="/app/sococo-rtc.min.css" rel="stylesheet">
+<body ng-controller="SococoRTCApp" ng-init="init('<%=pubsubport%>','<%=pubsubmount%>','<%=channel%>')" >
 
 <div class="masthead">
    <div class="inner clearfix">
@@ -26,11 +26,13 @@
    <div class="loading rtc-panel-raise animated bounceIn" ng-hide="initialized">
       <h1 class="">Loading...</h1>
    </div>
-   <div class="cover rtc-panel-raise ng-hide animated fadeInDown" ng-show="initialized">
-      <video sc-local-peer
+   <div sc-peer-grid class="cover ng-hide animated fadeInDown" ng-show="initialized">
+      <video class="rtc-panel-drop"
+             sc-local-peer
              localPeer="localPeer">
-       </video>
-      <video sc-peer
+      </video>
+      <video class="rtc-panel-drop"
+             sc-peer
              ng-hide="peer.remoteStream.ended"
              peer="peer"
              peerId="{{id}}"
@@ -78,12 +80,12 @@
    }
    window.onload = function() {
       loadScripts([
-         "js/faye-browser-min.js",
-         "js/adapter.js",
-         "app/sococo-rtc.js",
+         "/js/faye-browser-min.js",
+         "/js/adapter.js",
+         "/app/sococo-rtc.js",
          "//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular.min.js",
          "//ajax.googleapis.com/ajax/libs/angularjs/1.2.12/angular-cookies.min.js",
-         "app/sococo-rtc-app.js"
+         "/app/sococo-rtc-app.js"
       ],function(){
          console.log("Sococo.RTC demo initialized.");
          angular.bootstrap(document, ["sococoRTC"]);
