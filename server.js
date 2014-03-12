@@ -7,6 +7,15 @@ var faye = require('faye');
 var bayeuxMount = "/meet";
 var env = server.get('env');
 
+
+// This is used for simple unique short URL generation.
+//
+// It is not intended for production use, and is simply
+// for demonstration purposes.
+var channelIdCount = 0;
+var Hashids = require('hashids');
+var roomHasher = new Hashids('SUPER _ SECRET _ SERVER _ SALT', 0, 'abcdefghijklmnopqrstuvwxyz0123456789');
+
 // Heroku will specify the port to listen on with the `process.env.PORT` variable.
 var serverPort = process.env.PORT || 4202;
 
@@ -34,7 +43,16 @@ server.configure('production', function(){
 server.get('/', function(req,res){
    res.render('index.html',{
       pubsubport:serverPort,
-      pubsubmount:bayeuxMount
+      pubsubmount:bayeuxMount,
+      channel:'demoRoom'
+   });
+});
+
+server.get('/m/:id', function(req,res){
+   res.render('index.html',{
+      pubsubport:serverPort,
+      pubsubmount:bayeuxMount,
+      channel:req.params.id
    });
 });
 
