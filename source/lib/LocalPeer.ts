@@ -43,6 +43,8 @@ module Sococo.RTC {
       };
       localStream:LocalMediaStream = null;
 
+      private _keepAliveInterval:number;
+
       pipe:any; // TODO: Faye.Client in DefinitelyTyped?
       constructor(config:PeerChannelProperties){
          super();
@@ -177,6 +179,9 @@ module Sococo.RTC {
          }
          this.peers = {};
 
+         clearInterval(this._keepAliveInterval);
+         this._keepAliveInterval = null;
+
          this.pipe.publish(this.getZoneChannel(),{
             type:'leave',
             userId:this.config.localId
@@ -201,6 +206,10 @@ module Sococo.RTC {
                type: "join",
                userId: this.config.localId
             });
+
+            this._keepAliveInterval = this._keepAliveInterval || setInterval(() => {
+               this.pipe.publish(this.getZoneChannel(),{type:"ping"});
+            },5000);
          });
          sub.errback(() => {
             console.error("failed to subscribe to",zoneChannel);
@@ -224,6 +233,8 @@ module Sococo.RTC {
             case "leave":
                //console.log("Removing peer" + data.userId);
                this.removePeer(data.userId);
+               break;
+            case "ping":
                break;
             default:
                console.log("unhandled message:",data);
