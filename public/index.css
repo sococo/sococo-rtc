@@ -44,6 +44,17 @@ a.active:hover {
    margin-right: auto;
    margin-left: auto;
 }
+.user-container{
+   padding:0;
+   font-size: 2em;
+}
+.user-container .self {
+   color:#6f5499;
+}
+/*.user-container .active {*/
+   /*color:#549957;*/
+/*}*/
+
 .inner {
    padding: 10px 0;
 }
@@ -109,7 +120,7 @@ ul.controls > li > a:focus {
 }
 .cover {
    color:#ddd;
-   padding: 50px;
+   padding: 10px;
    text-align:center;
 }
 

@@ -23,17 +23,26 @@
 </div>
 
 <div class="cover-container">
+   <div class="user-container">
+      <span class="srtc-fontawesome-webfont self" title="You"></span>
+      <span class="srtc-fontawesome-webfont"
+            title="Peer-{{id}}"
+            ng-repeat="(id,peer) in localPeer.peers">
+      </span>
+   </div>
+
    <div class="loading rtc-panel-raise animated bounceIn" ng-hide="initialized">
       <h1 class="">Loading...</h1>
    </div>
    <div sc-peer-grid class="cover ng-hide animated fadeInDown" ng-show="initialized">
       <video class="rtc-panel-drop"
              sc-local-peer
+             ng-show="localPeer.localStream"
              localPeer="localPeer">
       </video>
       <video class="rtc-panel-drop"
              sc-peer
-             ng-hide="peer.remoteStream.ended"
+             ng-hide="peer.remoteStream.ended || !peer.remoteStream"
              peer="peer"
              peerId="{{id}}"
              ng-repeat="(id,peer) in localPeer.peers">

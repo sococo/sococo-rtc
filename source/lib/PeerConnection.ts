@@ -162,12 +162,16 @@ module Sococo.RTC {
             this.connection.close();
             this.connection = null;
          }
-         if(this.remoteStream){
-            this.trigger('removeStream',this.remoteStream);
-         }
-         this.remoteStream = null;
+         this._closeRemoteStream();
          this._glareValue = -1;
          this._glareQueue.length = 0;
+      }
+
+      private _closeRemoteStream(){
+         if(this.remoteStream){
+            this.trigger('removeStream',{stream:this.remoteStream,userId:this.config.remoteId});
+            this.remoteStream = null;
+         }
       }
 
       // Signal glare handling.
@@ -245,10 +249,7 @@ module Sococo.RTC {
             clearInterval(this._heartbeatInterval);
             this._heartbeatInterval = null;
          }
-         if(this.remoteStream){
-            this.trigger('removeStream',{stream:this.remoteStream,userId:this.config.remoteId});
-            this.remoteStream = null;
-         }
+         this._closeRemoteStream();
          this.localStream = null;
       }
 
@@ -278,8 +279,7 @@ module Sococo.RTC {
       }
       onRemoveStream(evt) {
          console.warn('--- Remove Remote Stream');
-         this.trigger('removeStream',{stream:evt.stream,userId:this.config.remoteId});
-         this.remoteStream = null;
+         this._closeRemoteStream();
       }
 
       offer(done?:(error?:any,offer?:any) => void, peerId:string=null){
@@ -587,10 +587,7 @@ module Sococo.RTC {
                break;
             // Close signals that the peer is forcing a disconnect of the connection.
             case "close":
-               if(this.remoteStream){
-                  this.trigger("removeStream",{stream:this.remoteStream,userId:this.config.remoteId});
-                  this.remoteStream = null;
-               }
+               this._closeRemoteStream();
                break;
          }
       }

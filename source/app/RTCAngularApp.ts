@@ -14,7 +14,7 @@ module SococoRTCApp {
          $scope.localPeerId = $cookies.localPeerId;
       }
       else{
-         $cookies.localPeerId = $scope.localPeerId = '' + Math.floor(Math.random() * (1000000 - 5 + 1)) + 5;
+         $cookies.localPeerId = $scope.localPeerId = '' + Math.floor((Math.random() * 1000000000 - 5) + 1) + 5;
       }
 
       console.log("My peer is : " + $scope.localPeerId);
@@ -22,13 +22,14 @@ module SococoRTCApp {
       $scope.userName = "Unknown User";
       $scope.localVideo = null;
 
-      $scope.init = function(socketPort:string,socketMount:string){
+
+      $scope.init = function(socketPort:string,socketMount:string,channel:string){
          $scope.initialized = true;
          var host = (<any>location).origin
             .replace(/^([a-zA-z]+):\/\//, '')
             .replace(/:(\d+)$/,':' + socketPort);
          $scope.localPeer = new Sococo.RTC.LocalPeerConnection({
-            location:"rtc-demo",
+            location:channel,
             localId:$scope.localPeerId,
             serverUrl:host,
             serverMount:socketMount
@@ -39,7 +40,7 @@ module SococoRTCApp {
          $scope.localPeer.on('addPeer removePeer',function() {
             $scope.$apply();
          });
-      }
+      };
 
       /* Toggle buttons for Listen/AudioShare/VideoShare */
       $scope.listen = true;
@@ -70,8 +71,8 @@ module SococoRTCApp {
                if(localPeer){
                   function updateStream(){
                      videoElement.muted = true;
+                     attachMediaStream(videoElement,localPeer.localStream);
                      if(localPeer.localStream){
-                        attachMediaStream(videoElement,localPeer.localStream);
                         videoElement.play();
                      }
                      $scope.$$phase || $scope.$digest();

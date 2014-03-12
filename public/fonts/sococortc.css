@@ -64,3 +64,6 @@
 .srtc-volume-strike:before {
    content: "m";
 }
+.srtc-fontawesome-webfont:before {
+  content: "n";
+}

@@ -131,7 +131,6 @@ module Sococo.RTC {
                }
             }
          };
-
          if(needBroadcast){
             var constrainedMedia = {
                video:this.properties.sendVideo,
@@ -149,6 +148,7 @@ module Sococo.RTC {
                   this.localStream.stop();
                }
                this.localStream = null;
+               this.trigger('updateStream');
             }
             _syncProperties();
          }
