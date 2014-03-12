@@ -8,13 +8,30 @@ var bayeuxMount = "/meet";
 var env = server.get('env');
 
 
-// This is used for simple unique short URL generation.
+//-----------------------------------------------------------------------------
+// Unique Room URL generation
+//-----------------------------------------------------------------------------
 //
-// It is not intended for production use, and is simply
-// for demonstration purposes.
-var channelIdCount = 0;
+
+// This is not intended for production use, and is simply for demonstration purposes.
+var channelCounterMax = 4096;
+var channelCounter1 = 0;
+var channelCounter2 = 0;
 var Hashids = require('hashids');
-var roomHasher = new Hashids('SUPER _ SECRET _ SERVER _ SALT', 0, 'abcdefghijklmnopqrstuvwxyz0123456789');
+var roomHasher = new Hashids('SUPER _ SECRET _ SERVER _ SALT', 0, 'abcdefghijklmnopqrstuvwxyz');
+
+function getUniqueMeetUrl() {
+   if(channelCounter1 === channelCounterMax){
+      channelCounter1 = 0;
+      channelCounter2++;
+      if(channelCounter2 >= channelCounterMax){
+         throw new Error("You've exhausted your _very_ considerable number of room counters.")
+      }
+   }
+   channelCounter1++;
+   var hash = roomHasher.encrypt([channelCounter1,channelCounter2]);
+   return hash;
+}
 
 // Heroku will specify the port to listen on with the `process.env.PORT` variable.
 var serverPort = process.env.PORT || 4202;
@@ -40,12 +57,9 @@ server.configure('production', function(){
 });
 
 
+// Main page just redirects to a new room.
 server.get('/', function(req,res){
-   res.render('index.html',{
-      pubsubport:serverPort,
-      pubsubmount:bayeuxMount,
-      channel:'demoRoom'
-   });
+   res.redirect('/m/' + getUniqueMeetUrl());
 });
 
 server.get('/m/:id', function(req,res){
