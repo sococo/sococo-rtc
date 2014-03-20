@@ -25,6 +25,10 @@
     "grunt-contrib-concat": "0.3.0",
     "grunt-contrib-watch": "0.5.3",
     "ejs": "~0.8.5",
-    "hashids": "~0.3.3"
+    "hashids": "~0.3.3",
+    "faye-redis": "~0.2.0"
+  },
+  "devDependencies": {
+    "performance-now": "~0.1.3"
   }
 }

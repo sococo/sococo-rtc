@@ -5,13 +5,12 @@ var express = require('express');
 var server = express();
 var faye = require('faye');
 var bayeuxMount = "/meet";
-var env = server.get('env');
+var cluster = require('cluster');
 
 
 //-----------------------------------------------------------------------------
 // Unique Room URL generation
 //-----------------------------------------------------------------------------
-//
 
 // This is not intended for production use, and is simply for demonstration purposes.
 var channelCounterMax = 4096;
@@ -40,24 +39,23 @@ var serverPort = process.env.PORT || 4202;
 server.use(express.compress());
 
 // Pretty print HTML outputs in development and debug configurations
-if(env !== 'production'){
+if(process.env.NODE_ENV !== 'production'){
    server.locals.pretty = true;
 }
 
-// Development Settings
-server.configure(function(){
-   server.use(express.errorHandler({
-      dumpExceptions: true,
-      showStack: true
-   }));
-});
+// Error reporter
+server.use(express.errorHandler({
+   dumpExceptions: true,
+   showStack: true
+}));
 // Production Settings
 server.configure('production', function(){
    server.use(express.errorHandler());
 });
 
-
-// Main page just redirects to a new room.
+//-----------------------------------------------------------------------------
+// Express Routes
+//-----------------------------------------------------------------------------
 server.get('/', function(req,res){
    res.redirect('/m/' + getUniqueMeetUrl());
 });
@@ -78,14 +76,52 @@ server.set('views',"public/");
 
 // Mount the `public` directory for static file serving.
 server.use(express.static(path.resolve(__dirname + "/public")));
-
 server.use("/source", express.static(path.resolve(__dirname + "/source")));
 
-// Set up faye realtime connections
-var bayeux = new faye.NodeAdapter({
-   mount:    bayeuxMount,
-   timeout:  45
-});
 var hServer = server.listen(serverPort);
+console.log((cluster.isMaster ? "" : "[Worker" + cluster.worker.id + "]") + " Initialized on port " + serverPort);
+
+//-----------------------------------------------------------------------------
+// Configure Faye PubSub for peer messaging
+//-----------------------------------------------------------------------------
+!cluster.isMaster && console.log("[Worker" + cluster.worker.id + "] Initializing Faye...");
+var fayeConfig = {
+   mount: bayeuxMount,
+   timeout: 45
+};
+
+// Support RedisToGo for clustered environments
+if(process.env.REDISTOGO_URL){
+   try{
+      var url = require('url');
+      var uri = url.parse(process.env.REDISTOGO_URL);
+      var fayeRedis = require('faye-redis');
+      console.log("   using Redis adapter at (" + uri.hostname + ":" + uri.port + ")");
+      fayeConfig.engine = {
+         type: fayeRedis,
+         host: uri.hostname,
+         port: uri.port
+      };
+
+      // Authentication
+      if(uri.auth){
+         fayeConfig.engine.password = uri.auth.split(":")[1];
+      }
+   }
+   catch(e){
+      delete fayeConfig.engine;
+      console.log("   FAILED: " + e);
+   }
+}
+
+// Catch bad cluster configurations and exit the app.
+//
+// It's better to blow up on start than silently fail and leave you guessing.
+if(!cluster.isMaster && typeof fayeConfig.engine === 'undefined'){
+   console.log("--- Exiting Worker, will not function in cluster without storage adapter.\nRecommend: Configure Redis or run as single-process application.");
+   process.exit(1);
+}
+
+// Initialize and attach faye to the express server.
+var bayeux = new faye.NodeAdapter(fayeConfig);
 bayeux.attach(hServer);
-console.log("Server running on port " + serverPort);
