@@ -142,21 +142,32 @@ interface RTCPeerConnectionErrorCallback {
 	(errorInformation: string): void;
 }
 
-/** This should be an enum */
-interface RTCIceGatheringState {
-	string;
+//--------------------------------------------------------------------------
+// PeerConnection signaling states
+// http://dev.w3.org/2011/webrtc/editor/webrtc.html#state-definitions
+//--------------------------------------------------------------------------
+declare enum RTCSignalingState {
+      "stable",
+      "have-local-offer",
+      "have-remote-offer",
+      "have-local-pranswer",
+      "have-remote-pranswer",
+      "closed"
 }
-
-/** This should be an enum */
-interface RTCIceConnectionState {
-	string;
+declare enum RTCIceGatheringState {
+      "new",
+      "gathering",
+      "complete"
 }
-
-/** This should be an enum */
-interface RTCSignalingState{
-	string;
+declare enum RTCIceConnectionState {
+      "new",
+      "checking",
+      "connected",
+      "completed",
+      "failed",
+      "disconnected",
+      "closed"
 }
-
 interface RTCPeerConnection {
 	createOffer(successCallback: RTCSessionDescriptionCallback, failureCallback?: RTCPeerConnectionErrorCallback, constraints?: MediaConstraints): void;
 	createAnswer(successCallback: RTCSessionDescriptionCallback, failureCallback?: RTCPeerConnectionErrorCallback, constraints?: MediaConstraints): void;
