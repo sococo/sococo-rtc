@@ -5,7 +5,7 @@
    <meta name="viewport" content="width=device-width, initial-scale=1">
    <meta name="description" content="Sococo.RTC">
    <meta name="author" content="Social Communications Company">
-   <title>Sococo RTC Playground</title>
+   <title>WebRTC Meeting Example</title>
    <link href="/app/sococo-rtc.min.css" rel="stylesheet">
 <body ng-controller="SococoRTCApp" ng-init="init('<%=pubsubport%>','<%=pubsubmount%>','<%=channel%>')" >
 
@@ -58,7 +58,11 @@
    <a class="srtc-social-twitter" href="https://twitter.com/so_co_co"></a>
 </div>
 
-<!-- Asynchronously load angular and the app. -->
+<!--
+   Asynchronously load the application with no external library dependencies.
+
+    -- Replace this with your preferred resource loading library, if desired.
+-->
 <script type="text/javascript">
    /* Based on: http://jeremyhixon.com/snippet/loading-javascript-files-asynchronously/ */
    function loadScripts(urls,success){
