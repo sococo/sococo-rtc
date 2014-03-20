@@ -1,7 +1,7 @@
 
 module SococoRTCApp {
    declare var angular:any;
-   declare var Sococo:any;
+   declare var SRTC:any;
    declare var attachMediaStream;
    export var app = angular.module('sococoRTC', [
       // Cookies are used to retain generated user ID when refreshing the browser.
@@ -28,7 +28,7 @@ module SococoRTCApp {
          var host = (<any>location).origin
             .replace(/^([a-zA-z]+):\/\//, '')
             .replace(/:(\d+)$/,':' + socketPort);
-         $scope.localPeer = new Sococo.RTC.LocalPeerConnection({
+         $scope.localPeer = new SRTC.LocalPeerConnection({
             location:channel,
             localId:$scope.localPeerId,
             serverUrl:host,

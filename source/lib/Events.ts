@@ -1,7 +1,7 @@
 // Sococo.RTC - Basic event emitter
 //
 // Replace with your project's existing event emitter when needed.
-module Sococo.RTC {
+module SRTC {
 
    // Expected interface for for event emitter objects
    export interface IEvents {

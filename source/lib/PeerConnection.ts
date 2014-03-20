@@ -3,7 +3,7 @@
 /// <reference path="./Events.ts" />
 /// <reference path="./LocalPeer.ts" />
 
-module Sococo.RTC {
+module SRTC {
    declare var createIceServer:any;
    if(typeof createIceServer === 'undefined'){
       createIceServer = function(a,b,c){};
@@ -25,6 +25,7 @@ module Sococo.RTC {
        */
          credential:string;
    }
+
 
    //--------------------------------------------------------------------------
    // ICE servers.  No TURN servers, just public Google STUN.
@@ -513,6 +514,10 @@ module Sococo.RTC {
          }
          switch(data.type){
             case "offer":
+               // Offer in non stable state, create a new connection.
+               if(this.connection.signalingState !== RTCSignalingState["stable"]){
+                  this.createConnection();
+               }
                var offer = JSON.parse(<any>data.offer);
                console.warn("<--- : Receive peer offer");
                this._glareValue = data.glare;

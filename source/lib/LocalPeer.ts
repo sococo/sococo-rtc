@@ -4,7 +4,7 @@
 /// <reference path="./PeerConnection.ts" />
 
 
-module Sococo.RTC {
+module SRTC {
    declare var Faye:any;
    declare var getUserMedia:any;
 
@@ -33,7 +33,7 @@ module Sococo.RTC {
    export class LocalPeerConnection extends Events {
       config:PeerChannelProperties;
       peers:{
-         [id:string]:Sococo.RTC.PeerConnection
+         [id:string]:SRTC.PeerConnection
       } = {};
       properties:PeerProperties = {
          sendVideo:false,
@@ -75,7 +75,7 @@ module Sococo.RTC {
          }
          var peer:PeerConnection = this.peers[remoteId];
          if(typeof peer !== 'undefined'){
-            this.peers[remoteId].destroy();
+            return;
          }
          peer = this.peers[remoteId] = new PeerConnection({
             pipe: this.pipe,
