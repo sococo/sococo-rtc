@@ -175,11 +175,11 @@ interface RTCPeerConnection {
 	localDescription: RTCSessionDescription;
 	setRemoteDescription(description: RTCSessionDescription, successCallback?: RTCVoidCallback, failureCallback?: RTCPeerConnectionErrorCallback): void;
 	remoteDescription: RTCSessionDescription;
-	signalingState: RTCSignalingState;
+	signalingState: string;
 	updateIce(configuration?: RTCConfiguration, constraints?: MediaConstraints): void;
 	addIceCandidate(candidate: RTCIceCandidate): void;
-	iceGatheringState: RTCIceGatheringState;
-	iceConnectionState: RTCIceConnectionState;
+	iceGatheringState: string;
+	iceConnectionState: string;
 	getLocalStreams(): MediaStream[];
 	getRemoteStreams(): MediaStream[];
 	createDataChannel(label?: string, dataChannelDict?: RTCDataChannelInit): RTCDataChannel;

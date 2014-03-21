@@ -75,6 +75,10 @@ module SRTC {
          }
          var peer:PeerConnection = this.peers[remoteId];
          if(typeof peer !== 'undefined'){
+            // Clear the heartbeat so that the peer will
+            // initiate a new heartbeat.  This is needed
+            // when a browser page is refreshed, for example.
+            peer.clearHeartbeat();
             return;
          }
          peer = this.peers[remoteId] = new PeerConnection({

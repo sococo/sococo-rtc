@@ -17,7 +17,7 @@ var channelCounterMax = 4096;
 var channelCounter1 = 0;
 var channelCounter2 = 0;
 var Hashids = require('hashids');
-var roomHasher = new Hashids('SUPER _ SECRET _ SERVER _ SALT', 0, 'abcdefghijklmnopqrstuvwxyz');
+var roomHasher = new Hashids('SALT' + Math.random() * 100, 0, 'abcdefghijklmnopqrstuvwxyz');
 
 function getUniqueMeetUrl() {
    if(channelCounter1 === channelCounterMax){
@@ -90,14 +90,15 @@ var fayeConfig = {
    timeout: 45
 };
 
-// Support Redis via a fully qualified connection URL.  Support
-// Heroku RedisToGo and RedisCloud detection.
-if(process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL){
+// Support Redis via a fully qualified connection URL via `REDIS_URL`
+// environment variable.  Detect Heroku RedisToGo and RedisCloud add-ons.
+if(process.env.REDIS_URL || process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL){
    try{
       var url = require('url');
-      var uri = url.parse(process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL);
+      var uri = url.parse(process.env.REDIS_URL || process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL);
       var fayeRedis = require('faye-redis');
-      console.log("   using Redis adapter at (" + uri.hostname + ":" + uri.port + ")");
+      var redisName = process.env.REDISTOGO_URL ? "RedisToGo" : process.env.REDIS_URL ? "Redis" : "RedisCloud";
+      console.log(" -- using " + redisName + " adapter at (" + uri.hostname + ":" + uri.port + ")");
       fayeConfig.engine = {
          type: fayeRedis,
          host: uri.hostname,
@@ -119,7 +120,11 @@ if(process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL){
 //
 // It's better to blow up on start than silently fail and leave you guessing.
 if(!cluster.isMaster && typeof fayeConfig.engine === 'undefined'){
-   console.log("--- Exiting Worker, will not function in cluster without storage adapter.\nRecommend: Configure Redis or run as single-process application.");
+   console.log([
+      "Cluster Configuration Error: Exiting",
+      "Cannot properly function in cluster mode without a remote storage adapter.",
+      "Recommend: Configure Redis or run as single-process application."
+   ].join('\n'));
    process.exit(1);
 }
 

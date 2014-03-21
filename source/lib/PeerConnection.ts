@@ -110,7 +110,7 @@ module SRTC {
       // of candidates until after setRemoteDescription is called.
       private _iceCandidateQueue:any[] = [];
 
-      private _heartbeatInterval:number;
+      private _heartbeatInterval:number = null;
       private _heartbeatMissed:boolean = false;
       private _heartbeatMissCount:number = 0;
 
@@ -246,14 +246,17 @@ module SRTC {
             this.connection.close();
             this.connection = null;
          }
-         if(typeof this._heartbeatInterval !== 'undefined'){
-            clearInterval(this._heartbeatInterval);
-            this._heartbeatInterval = null;
-         }
+         this.clearHeartbeat();
          this._closeRemoteStream();
          this.localStream = null;
       }
 
+      clearHeartbeat() {
+         if(this._heartbeatInterval !== null){
+            clearInterval(this._heartbeatInterval);
+            this._heartbeatInterval = null;
+         }
+      }
       updateConstraints() {
          this.constraints.mandatory.OfferToReceiveAudio = this.properties.receiveAudio === true;
          this.constraints.mandatory.OfferToReceiveVideo = this.properties.receiveVideo === true;
@@ -515,7 +518,7 @@ module SRTC {
          switch(data.type){
             case "offer":
                // Offer in non stable state, create a new connection.
-               if((<any>this.connection.signalingState) !== "stable"){
+               if(this.connection.signalingState !== "stable" || this.connection.iceConnectionState !== 'connected'){
                   this.createConnection();
                }
                var offer = JSON.parse(<any>data.offer);
