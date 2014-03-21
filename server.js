@@ -90,11 +90,12 @@ var fayeConfig = {
    timeout: 45
 };
 
-// Support RedisToGo for clustered environments
-if(process.env.REDISTOGO_URL){
+// Support Redis via a fully qualified connection URL.  Support
+// Heroku RedisToGo and RedisCloud detection.
+if(process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL){
    try{
       var url = require('url');
-      var uri = url.parse(process.env.REDISTOGO_URL);
+      var uri = url.parse(process.env.REDISTOGO_URL || process.env.REDISCLOUD_URL);
       var fayeRedis = require('faye-redis');
       console.log("   using Redis adapter at (" + uri.hostname + ":" + uri.port + ")");
       fayeConfig.engine = {
