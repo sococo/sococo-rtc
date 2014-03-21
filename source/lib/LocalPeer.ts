@@ -90,12 +90,12 @@ module SRTC {
          }, this.properties);
 
          // Negotiate an offer when the connection is ready.
-         if(negotiate === true){
-            peer.on('ready',() => {
-               peer.off('ready',null,this);
+         peer.on('ready',() => {
+            peer.off('ready',null,this);
+            if(negotiate === true){
                peer.negotiateProperties(this.properties);
-            });
-         }
+            }
+         });
 
          // Remove peers that timeout
          peer.on('timeout',() => {

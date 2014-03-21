@@ -131,6 +131,8 @@ module SRTC {
          sub.callback(() => {
             //console.warn("Subscribed to peer channel: \n",peerChannel);
             this.createConnection();
+            this.send({type:"ready"});
+            this.trigger('ready');
          });
          sub.errback(() => {
             console.error("failed to subscribe to",peerChannel);
@@ -156,7 +158,6 @@ module SRTC {
          if(this.localStream !== null){
             this.connection.addStream(this.localStream);
          }
-         this.send({type:"ready"});
       }
       destroyConnection(){
          if(this.connection){
@@ -495,7 +496,7 @@ module SRTC {
          var candidate = JSON.parse(data.candidate);
          if(candidate && this.connection && data.glare === this._glareValue){
             try{
-               console.warn("Add Ice Candidate --- " + candidate);
+               //console.warn("Add Ice Candidate --- " + candidate);
                this.connection.addIceCandidate(new RTCIceCandidate(candidate));
                return true;
             }
@@ -568,7 +569,7 @@ module SRTC {
             case "ready":
                if(!this._heartbeatInterval){
                   console.warn("<--- : Peer reports ready, setting up heartbeat.");
-                  this.trigger('ready');
+                  this.send({type:"ready"});
                   this._heartbeatMissCount = 0;
                   this._heartbeatMissed = false;
                   // Send a heartbeat so that our server doesn't think we've gone
