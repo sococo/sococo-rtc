@@ -519,7 +519,7 @@ module SRTC {
          switch(data.type){
             case "offer":
                // Offer in non stable state, create a new connection.
-               if(this.connection.signalingState !== "stable" || this.connection.iceConnectionState !== 'connected'){
+               if(this.connection.signalingState !== "stable" || this.connection.iceConnectionState !== 'new'){
                   this.createConnection();
                }
                var offer = JSON.parse(<any>data.offer);
