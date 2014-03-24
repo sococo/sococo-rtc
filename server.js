@@ -123,7 +123,7 @@ if(!cluster.isMaster && typeof fayeConfig.engine === 'undefined'){
    console.log([
       "Cluster Configuration Error: Exiting",
       "Cannot properly function in cluster mode without a remote storage adapter.",
-      "Recommend: Configure Redis or run as single-process application."
+      "Recommend: Configure Redis or run in single process mode:\n   node server.js."
    ].join('\n'));
    process.exit(1);
 }
