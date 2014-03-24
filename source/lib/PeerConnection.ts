@@ -9,28 +9,10 @@ module SRTC {
       createIceServer = function(a,b,c){};
    }
 
-   export interface RTCIceServer {
-
-      /**
-       * @property {string|string[]} urls STUN or TURN URI(s) as defined in [STUN-URI] and [TURN-URI] or other URI types.
-       */
-         urls:any;
-      /**
-       * If this RTCIceServer object represents a TURN server, then this attribute specifies the username to use with that TURN server.
-       */
-         username:string;
-
-      /**
-       * If this RTCIceServer object represents a TURN server, then this attribute specifies the credential to use with that TURN server.
-       */
-         credential:string;
-   }
-
-
    //--------------------------------------------------------------------------
    // ICE servers.  No TURN servers, just public Google STUN.
    //--------------------------------------------------------------------------
-   export var PCIceServers = {
+   export var PCIceServers:RTCConfiguration = {
       'iceServers': [
          createIceServer("stun:stun.l.google.com:19302"),
          createIceServer("stun:stun1.l.google.com:19302"),
@@ -38,7 +20,7 @@ module SRTC {
          createIceServer("stun:stun3.l.google.com:19302"),
          createIceServer("stun:stun4.l.google.com:19302")
       ]
-   }
+   };
 
    export interface IPeerOffer {
       sdp:string;
@@ -83,7 +65,7 @@ module SRTC {
    export class PeerConnection extends Events {
       connection:RTCPeerConnection = null;
       config:PeerConnectionConfig;
-      pipe:any; // TODO: Faye.Client?
+      pubSub:any; // TODO: PubSub interface, (Faye.Client currently)
       localStream:LocalMediaStream;
       remoteStream:MediaStream;
 
@@ -118,11 +100,11 @@ module SRTC {
          super();
          this.config = config;
          this.properties = props;
-         this.pipe = this.config.pipe;
+         this.pubSub = this.config.pipe;
          this.localStream = typeof config.localStream !== 'undefined' ? config.localStream : null;
          var peerChannel = this.getPeerChannel();
          //console.warn("Subscribing to peer: \n",peerChannel);
-         var sub = this.pipe.subscribe(peerChannel, (data) => {
+         var sub = this.pubSub.subscribe(peerChannel, (data) => {
             // Only process remote peer messages.
             if(data.userId !== this.config.localId){
                this._handlePeerMessage(data);
@@ -144,7 +126,6 @@ module SRTC {
       createConnection(){
          console.warn("----------------------- New RTCPeerConnection " + (this.localStream !== null ? " (broadcast)" : ""));
          this.destroyConnection();
-         this._glareQueue.length = 0;
          this.connection = new RTCPeerConnection(PCIceServers,this.constraints);
          this.connection.onaddstream = (event) => {
             this.onAddStream(event);
@@ -166,7 +147,7 @@ module SRTC {
          }
          this._closeRemoteStream();
          this._glareValue = -1;
-         this._glareQueue.length = 0;
+         this._glareMessage = null;
       }
 
       private _closeRemoteStream(){
@@ -185,7 +166,7 @@ module SRTC {
       send(data:any){
          data = data || {};
          data.userId = this.config.localId;
-         this.pipe.publish(this.getPeerChannel(),data);
+         this.pubSub.publish(this.getPeerChannel(),data);
       }
 
       // Properties changed, create a new PeerConnection/Offer with the desired properties.
@@ -238,10 +219,10 @@ module SRTC {
       }
 
       destroy() {
-         if(this.pipe){
-            this.pipe && this.send({type:'close'});
-            this.pipe.unsubscribe(this.getPeerChannel());
-            this.pipe = null;
+         if(this.pubSub){
+            this.pubSub && this.send({type:'close'});
+            this.pubSub.unsubscribe(this.getPeerChannel());
+            this.pubSub = null;
          }
          if(this.connection){
             this.connection.close();
@@ -275,9 +256,6 @@ module SRTC {
       }
 
       onAddStream(evt) {
-         // TODO: Support multiple streams across one Peer.
-         // Need to track the streams here, and be sure to clean them
-         // up on destruction.
          console.warn('--- Add Remote Stream');
          this.remoteStream = evt.stream;
          this.trigger('addStream',{stream:evt.stream,userId:this.config.remoteId});
@@ -294,8 +272,6 @@ module SRTC {
          }
          console.warn("---> : Send peer offer");
          this._glareValue = this._rollGlareValue();
-         var peerChannel = this.getPeerChannel();
-         var self = this;
          var offerCreated = (offer) => {
             this.connection.setLocalDescription(offer,() => {
                this.send({
@@ -343,10 +319,9 @@ module SRTC {
       }
 
       //-----------------------------------------------------------------------
-      // PeerConnection Renegotiation
+      // PeerConnection Re/Negotiation
       //-----------------------------------------------------------------------
-
-      _negotiateRequest(){
+      private _negotiateRequest(){
          console.warn("---> : Send (re)negotiation request");
          this._sendGlareMessage('negotiate','negotiate-ack',null,(okay:boolean,retry:boolean) => {
             if(okay === true){
@@ -357,16 +332,14 @@ module SRTC {
             }
          });
       }
-
-      _negotiateAcknowledge(){
+      private _negotiateAcknowledge(){
          console.warn("---> : Send (re)negotiation acknowledgement");
          this.send({
             type:'negotiate-ack'
          });
          this.createConnection();
       }
-
-      _negotiateGo(data?:any){
+      private _negotiateGo(data?:any){
          this.createConnection();
          this.offer((error?:any,offer?:any) => {
             if(error) {
@@ -379,7 +352,7 @@ module SRTC {
       //-----------------------------------------------------------------------
       // Signal Glare resistant messaging
       //-----------------------------------------------------------------------
-      private _glareQueue:IGlareMessage[] = [];
+      private _glareMessage:IGlareMessage = null;
 
       /**
        * Generate a pseudo-random glare value between min and max.
@@ -393,24 +366,15 @@ module SRTC {
       }
 
       private _sendGlareMessage(type:string,ackType:string,data:any,done?:(okay:boolean,retry:boolean) => any){
-         // Don't allow duplicates based on message type.
-         for(var i:number = 0; i < this._glareQueue.length; i++){
-            if(this._glareQueue[i].type === type){
-               console.error("Attempted to send glare message while waiting for a glare ack of the same type");
-               return;
-            }
-         }
-
          // Generate a glare value.
          var glareRoll:number = this._rollGlareValue();
-
          // Note: we index by ackType because we compare/discard/accept on receipt of the response.
-         this._glareQueue.push({
+         this._glareMessage = {
             glare:glareRoll,
             type:type,
             ackType:ackType,
             callback:done
-         });
+         };
 
          console.warn("Send Glare Message (" + type + ") = " + glareRoll);
          // Fire off the message.
@@ -428,20 +392,12 @@ module SRTC {
        * @private
        */
       private _handleGlareMessage(data:any):boolean{
-         var pending:IGlareMessage = null;
-         var index:number = -1;
-         for(var i:number = 0; i < this._glareQueue.length; i++){
-            if(this._glareQueue[i].ackType === data.type || this._glareQueue[i].type === data.type){
-               index = i;
-               pending = this._glareQueue[i];
-               break;
-            }
-         }
+         var pending:IGlareMessage = this._glareMessage;
 
-         // If there is no pending glare ack for this type, or the type contains
-         // no glare information, return and let the default message handler take
+         // If there is no pending glare ack, or the type contains no glare
+         // information, return and let the default message handler take
          // care of things.
-         if(index === -1 || !pending || typeof data.glare === 'undefined'){
+         if(!pending || typeof data.glare === 'undefined'){
             return data;
          }
 
@@ -462,7 +418,7 @@ module SRTC {
          // If the remote message has a
          else if(data.glare > pending.glare){
             console.warn("       DISCARD LOCAL " + pending.type + ": " + data.glare  + " > " + pending.glare);
-            this._glareQueue.splice(index);
+            this._glareMessage = null;
             pending.callback(false,false);
             return data;
          }
@@ -473,7 +429,7 @@ module SRTC {
          }
 
          // Remove the glare message now that we're done with it.
-         this._glareQueue.splice(index);
+         this._glareMessage = null;
          return null;
       }
 
@@ -535,6 +491,10 @@ module SRTC {
                });
                break;
             case "answer":
+               if(this.connection.signalingState !== "have-local-offer"){
+                  console.warn("Ignoring answer from invalid PC state: " + this.connection.signalingState);
+                  return;
+               }
                var answer = JSON.parse(data.answer);
                console.warn("<--- : Receive peer answer");
                this.describeRemote(answer,(err?) => {
