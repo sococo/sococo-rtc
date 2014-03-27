@@ -211,11 +211,11 @@ module SRTC {
 
       getPeerChannel():string {
          var inputs = [
-            this.config.zoneId,
             this.config.localId,
             this.config.remoteId
-         ];
-         return '/' + inputs.sort().join('/');
+         ].sort();
+         inputs.unshift(this.config.zoneId);
+         return '/' + inputs.join('/');
       }
 
       destroy() {
