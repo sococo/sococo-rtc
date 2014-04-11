@@ -71,7 +71,7 @@ module SRTC {
 
       getServerEndpoint():string {
          var protocol = typeof require === 'undefined' ? '//' : 'http://';
-         var host = 'wowzadev01.eug.sococo.net:4202';
+         var host = this.config.serverUrl || 'localhost:4202';
          return protocol + host + (this.config.serverMount || '/');
       }
 
