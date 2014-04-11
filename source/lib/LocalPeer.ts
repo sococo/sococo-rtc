@@ -6,6 +6,7 @@
 
 module SRTC {
    declare var Faye:any;
+   declare var require:any;
    declare var getUserMedia:any;
 
    //--------------------------------------------------------------------------
@@ -49,6 +50,9 @@ module SRTC {
       constructor(config:PeerChannelProperties){
          super();
          this.config = config;
+         if(typeof Faye === 'undefined'){
+            Faye = require('faye');
+         }
          this.pipe = new Faye.Client(this.getServerEndpoint());
          this.pipe.connect(() => {
             this._onConnect();
@@ -60,8 +64,8 @@ module SRTC {
       }
 
       getServerEndpoint():string {
-         var protocol = '//';
-         var host = this.config.serverUrl || 'localhost:4202';
+         var protocol = typeof require === 'undefined' ? '//' : 'http://';
+         var host = 'wowzadev01.eug.sococo.net:4202';
          return protocol + host + (this.config.serverMount || '/');
       }
 
