@@ -18,9 +18,9 @@ module.exports = function(grunt) {
          },
          lib: {
             src: [
-               "source/lib/Events.ts",
-               "source/lib/LocalPeer.ts",
-               "source/lib/PeerConnection.ts"
+               "source/Events.ts",
+               "source/LocalPeer.ts",
+               "source/PeerConnection.ts"
             ],
             dest: 'public/app/sococo-rtc.js'
          },
@@ -68,7 +68,7 @@ module.exports = function(grunt) {
       // Watch for changes and trigger associated tasks.
       watch: {
          lib: {
-            files: ['source/lib/*.ts'],
+            files: ['source/*.ts'],
             tasks: ['typescript:lib']
          },
          app: {
