@@ -1,3 +1,9 @@
+/*!
+ * Sococo.RTC (http://github.com/sococo/sococo-rtc/)
+ * Copyright 2014 Social Communications Company
+ * Licensed under MIT (https://github.com/sococo/sococo-rtc/blob/master/LICENSE)
+ */
+
 // Sococo.RTC - Basic event emitter
 //
 // Replace with your project's existing event emitter when needed.

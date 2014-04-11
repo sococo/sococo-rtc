@@ -1,3 +1,9 @@
+/*!
+ * Sococo.RTC (http://github.com/sococo/sococo-rtc/)
+ * Copyright 2014 Social Communications Company
+ * Licensed under MIT (https://github.com/sococo/sococo-rtc/blob/master/LICENSE)
+ */
+
 /// <reference path="./../types/MediaStream.d.ts"/>
 /// <reference path="../types/RTCPeerConnection.d.ts"/>
 /// <reference path="./Events.ts" />

@@ -1,3 +1,8 @@
+/*!
+ * Sococo.RTC (http://github.com/sococo/sococo-rtc/)
+ * Copyright 2014 Social Communications Company
+ * Licensed under MIT (https://github.com/sococo/sococo-rtc/blob/master/LICENSE)
+ */
 
 module SococoRTCApp {
    declare var angular:any;
