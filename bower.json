@@ -1,0 +1,26 @@
+{
+  "name": "SococoRTC",
+  "version": "0.0.0",
+  "homepage": "https://github.com/sococo/sococo-rtc",
+  "authors": [
+    "Justin DuJardin <justin.dujardin@sococo.com>"
+  ],
+  "main": "server.js",
+  "keywords": [
+    "WebRTC",
+    "Signaling",
+    "TypeScript",
+    "AngularJS"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "faye": "~1.0.0"
+  }
+}
