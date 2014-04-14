@@ -4,8 +4,10 @@
  * Licensed under MIT (https://github.com/sococo/sococo-rtc/blob/master/LICENSE)
  */
 
+///<reference path="../../types/angular/angular.d.ts"/>
+///<reference path="../../public/app/sococo-rtc.d.ts"/>
+
 module SococoRTCApp {
-   declare var angular:any;
    declare var SRTC:any;
    declare var attachMediaStream;
    export var app = angular.module('sococoRTC', [

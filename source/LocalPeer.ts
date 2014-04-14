@@ -4,8 +4,8 @@
  * Licensed under MIT (https://github.com/sococo/sococo-rtc/blob/master/LICENSE)
  */
 
-/// <reference path="./types/MediaStream.d.ts"/>
-/// <reference path="./types/RTCPeerConnection.d.ts"/>
+/// <reference path="../types/rtc/MediaStream.d.ts"/>
+/// <reference path="../types/rtc/RTCPeerConnection.d.ts"/>
 /// <reference path="./Events.ts" />
 /// <reference path="./PeerConnection.ts" />
 
