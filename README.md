@@ -51,4 +51,7 @@ start a watch server, and run the express application:
 
 > grunt develop
 
+## Contributing Back
 
+Follow the [git commit conventions](https://github.com/sococo/sococo-rtc/blob/master/CONVENTIONS.md), and submit
+a pull request.
