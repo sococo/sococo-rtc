@@ -99,17 +99,62 @@ module.exports = function(grunt) {
                port: 4202
             }
          }
+      },
+
+
+      /**
+       * Release/Deploy tasks
+       */
+      bump: {
+         options: {
+            files: ['package.json', 'bower.json'],
+            updateConfigs: ['pkg'],
+            commit: true,
+            commitMessage: 'chore(deploy): release v%VERSION%',
+            commitFiles: ['package.json', 'bower.json', 'CHANGELOG.md'],
+            createTag: true,
+            tagName: 'v%VERSION%',
+            tagMessage: 'Version %VERSION%',
+            push: true,
+            pushTo: 'origin',
+            gitDescribeOptions: '--tags --always --abbrev=1 --dirty=-d'
+         }
+      },
+      changelog: {},
+
+      'npm-contributors': {
+         options: {
+            commitMessage: 'chore(attribution): update contributors'
+         }
       }
    };
 
    grunt.initConfig(config);
+
+   // Build tasks
    grunt.loadNpmTasks('grunt-typescript');
-   grunt.loadNpmTasks('grunt-contrib-concat');
    grunt.loadNpmTasks('grunt-contrib-concat');
    grunt.loadNpmTasks('grunt-contrib-cssmin');
    grunt.loadNpmTasks('grunt-contrib-uglify');
+   grunt.registerTask('default', ['typescript','concat','uglify','cssmin']);
+
+   // Develop/debug
    grunt.loadNpmTasks('grunt-contrib-watch');
    grunt.loadNpmTasks('grunt-express-server');
-   grunt.registerTask('default', ['typescript','concat','uglify','cssmin']);
    grunt.registerTask('develop', ['default','express','watch']);
+
+   // Release/Deploy
+   grunt.loadNpmTasks('grunt-bump');
+   grunt.loadNpmTasks('grunt-conventional-changelog');
+   grunt.loadNpmTasks('grunt-npm');
+   grunt.registerTask('release', 'Build, bump and tag a new release.', function(type) {
+      type = type || 'patch';
+      grunt.task.run([
+         'npm-contributors',
+         "bump:" + type + ":bump-only",
+         'changelog',
+         'bump-commit'
+      ]);
+   });
+
 };
