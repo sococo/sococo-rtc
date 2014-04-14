@@ -22,13 +22,20 @@ module.exports = function(grunt) {
                "source/LocalPeer.ts",
                "source/PeerConnection.ts"
             ],
-            dest: 'public/app/sococo-rtc.js'
+            dest: 'public/app/<%= pkg.name %>.js'
          },
          app: {
             src: [
                "source/app/*.ts"
             ],
-            dest: 'public/app/sococo-rtc-app.js'
+            dest: 'public/app/<%= pkg.name %>-app.js'
+         },
+         tests: {
+            src: [
+               "test/*.ts",
+               "test/**/*.ts"
+            ],
+            dest: 'public/app/test/<%= pkg.name %>.test.js'
          }
       },
       concat: {
@@ -85,6 +92,12 @@ module.exports = function(grunt) {
             options: {
                nospawn: true // Without this option specified express won't be reloaded
             }
+         },
+         tests: {
+            files: [
+               '<%= typescript.tests.src %>'
+            ],
+            tasks: ['typescript:tests']
          }
       },
 
