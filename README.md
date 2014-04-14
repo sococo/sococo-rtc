@@ -24,9 +24,16 @@ Once the dependencies have been installed you can run the server:
 
 > node server.js
 
-or to run in a clustered environment
+If you wish to run the server in a node cluster, you will need to have support for some
+kind of Redis database, which is used by Faye to share information about connections.
 
 > node server-cluster.js
+
+If you are deploying to heroku and using RedisToGo or RedisCloud, you need to do nothing
+other than add them on your application.  If you're using a custom setup, make sure you
+set an environment variable `REDIS_URL` to define the Redis connection URL.
+
+
 
 ## Developing
 
@@ -39,9 +46,9 @@ If you do not have Grunt installed you may install it with the following command
 > npm install -g grunt-cli
 
 Once you have grunt installed you may build the application with the grunt command, or start an
-automated build when files change by using the `watch` task:
+automated build when files change by using the `develop` task, which will build the source files,
+start a watch server, and run the express application:
 
-> grunt
+> grunt develop
 
-> grunt watch
 
