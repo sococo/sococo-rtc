@@ -78,16 +78,38 @@ module.exports = function(grunt) {
          styles: {
             files: ['<%= concat.styles.src %>'],
             tasks: ['concat','cssmin']
+         },
+         server: {
+            files:  [ "server*.js" ],
+            tasks:  [ 'express:server' ],
+            options: {
+               nospawn: true // Without this option specified express won't be reloaded
+            }
+         }
+      },
+
+
+      /**
+       * Manage running and restarting the server process.
+       */
+      express: {
+         server: {
+            options: {
+               script: 'server.js',
+               port: 4202
+            }
          }
       }
    };
 
-
    grunt.initConfig(config);
    grunt.loadNpmTasks('grunt-typescript');
+   grunt.loadNpmTasks('grunt-contrib-concat');
    grunt.loadNpmTasks('grunt-contrib-concat');
    grunt.loadNpmTasks('grunt-contrib-cssmin');
    grunt.loadNpmTasks('grunt-contrib-uglify');
    grunt.loadNpmTasks('grunt-contrib-watch');
+   grunt.loadNpmTasks('grunt-express-server');
    grunt.registerTask('default', ['typescript','concat','uglify','cssmin']);
+   grunt.registerTask('develop', ['default','express','watch']);
 };
