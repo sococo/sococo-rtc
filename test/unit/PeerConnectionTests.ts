@@ -28,11 +28,6 @@ module SRTC.Test {
          };
          expect(remote).toThrow("PeerConnection requires a connected PubSub to function");
       });
-      it('should subscribe to peer channel on construction', () => {
-         pipe.connect('null://fake');
-         var remote = new SRTC.PeerConnection(config,peerProperties);
-         expect(pipe.subscribedChannels[remote.getPeerChannel()]).toBe(1);
-      });
    });
 }
 
