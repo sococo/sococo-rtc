@@ -496,10 +496,10 @@ module SRTC {
                this._glareValue = data.glare;
                this.answerWithProperties(offer,(err?) => {
                   if(!err){
-                     console.warn("Connection established.");
+                     this.trigger('connected');
                   }
                   else {
-                     console.error('' + err);
+                     this.trigger('failed');
                   }
                });
                break;
@@ -515,7 +515,7 @@ module SRTC {
                      console.error(err);
                   }
                   else {
-                     console.warn("Connection established.");
+                     this.trigger('connected');
                   }
                });
                break;

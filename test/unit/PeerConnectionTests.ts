@@ -13,6 +13,9 @@ module SRTC.Test {
          receiveAudio:false,
          receiveVideo:false
       };
+      var local:SRTC.PeerConnection;
+      var remote:SRTC.PeerConnection;
+
       beforeEach((done) => {
          pipe = new MockPubSub();
          pipe.connect('null://fake',(error?:any) => {
@@ -24,8 +27,22 @@ module SRTC.Test {
             localId: "localUserId",
             remoteId: "remoteUserId"
          };
+         local = new SRTC.PeerConnection({
+            pipe: <IPubSub>pipe,
+            zoneId: "testZone",
+            localId: "user1",
+            remoteId: "user2"
+         },peerProperties);
+         remote = new SRTC.PeerConnection({
+            pipe: <IPubSub>pipe,
+            zoneId: "testZone",
+            localId: "user2",
+            remoteId: "user1"
+         },peerProperties);
       });
       afterEach(() => {
+         local.destroy();
+         remote.destroy();
          pipe.disconnect();
       });
       it('should throw error if given disconnected pub/sub', () => {
@@ -43,48 +60,49 @@ module SRTC.Test {
          });
       });
 
-      describe('Two Peers', () => {
-         var local:SRTC.PeerConnection;
-         var remote:SRTC.PeerConnection;
-         beforeEach(() => {
-            local = new SRTC.PeerConnection({
-               pipe: <IPubSub>pipe,
-               zoneId: "testZone",
-               localId: "user1",
-               remoteId: "user2"
-            },peerProperties);
-            remote = new SRTC.PeerConnection({
-               pipe: <IPubSub>pipe,
-               zoneId: "testZone",
-               localId: "user2",
-               remoteId: "user1"
-            },peerProperties);
-         });
 
-         afterEach(() => {
-            local.destroy();
-            remote.destroy();
-         });
+      it('should generate deterministic channel names', () => {
+         expect(local.getPeerChannel()).toBe(remote.getPeerChannel());
+      });
 
-         it('should generate deterministic channel name for peers to share', () => {
-            expect(local.getPeerChannel()).toBe(remote.getPeerChannel());
-         });
+      it('should connect and signal ready', (done) => {
+         var remaining:number = 2;
+         var decrement = () => {
+            remaining--;
+            if(remaining <= 0){
+               done();
+            }
+         };
+         local.on('ready',decrement);
+         local.connect();
+         remote.on('ready',decrement);
+         remote.connect();
+         expect(pipe.subscribedChannels[local.getPeerChannel()]).toBe(2);
+      });
 
-         it('should connect peers and signal ready', (done) => {
-            var remaining:number = 2;
-            var decrement = () => {
-               remaining--;
-               if(remaining <= 0){
-                  done();
-               }
-            };
-            local.on('ready',decrement);
-            local.connect();
-            remote.on('ready',decrement);
-            remote.connect();
-            expect(pipe.subscribedChannels[local.getPeerChannel()]).toBe(2);
-         });
 
+      it('should successfully offer media to each other', (done) => {
+         var remaining:number = 2;
+         var decrement = () => {
+            remaining--;
+            if(remaining <= 0){
+               next();
+            }
+         };
+         var next = () => {
+            next = done;
+            remaining = 2;
+            local.off();
+            remote.off();
+            local.negotiateProperties(peerProperties);
+            local.on('connected', decrement);
+            remote.on('connected', decrement);
+         };
+         local.on('ready',decrement);
+         remote.on('ready',decrement);
+         local.connect();
+         remote.connect();
+         expect(pipe.subscribedChannels[local.getPeerChannel()]).toBe(2);
       });
    });
 }
