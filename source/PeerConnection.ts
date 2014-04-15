@@ -34,7 +34,7 @@ module SRTC {
    }
 
    export interface PeerConnectionConfig {
-      pipe:any; // Faye.Client
+      pipe:IPubSub;
       zoneId:string;  // Unique ID for zone
       localId:string; // Unique ID for local peer
       remoteId:string;// Unique ID for remote peer
@@ -110,20 +110,21 @@ module SRTC {
          this.localStream = typeof config.localStream !== 'undefined' ? config.localStream : null;
          var peerChannel = this.getPeerChannel();
          //console.warn("Subscribing to peer: \n",peerChannel);
-         var sub = this.pubSub.subscribe(peerChannel, (data) => {
+         this.pubSub.subscribe(peerChannel, (data) => {
             // Only process remote peer messages.
             if(data.userId !== this.config.localId){
                this._handlePeerMessage(data);
             }
-         });
-         sub.callback(() => {
-            //console.warn("Subscribed to peer channel: \n",peerChannel);
-            this.createConnection();
-            this.send({type:"ready"});
-            this.trigger('ready');
-         });
-         sub.errback(() => {
-            console.error("failed to subscribe to",peerChannel);
+         },(error?:any)=>{
+            if(error){
+               console.error("failed to subscribe to",peerChannel);
+            }
+            else {
+               //console.warn("Subscribed to peer channel: \n",peerChannel);
+               this.createConnection();
+               this.send({type:"ready"});
+               this.trigger('ready');
+            }
          });
       }
 

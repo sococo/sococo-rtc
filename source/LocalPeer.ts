@@ -7,6 +7,7 @@
 /// <reference path="../types/rtc/MediaStream.d.ts"/>
 /// <reference path="../types/rtc/RTCPeerConnection.d.ts"/>
 /// <reference path="./Events.ts" />
+/// <reference path="./PubSub.ts" />
 /// <reference path="./PeerConnection.ts" />
 
 
@@ -21,8 +22,7 @@ module SRTC {
    export interface PeerChannelProperties {
       location:string;
       localId:string;
-      serverUrl:string;
-      serverMount:string; // e.g. "/faye"
+      pubSub:IPubSub;
    }
 
    export interface PeerProperties {
@@ -52,29 +52,17 @@ module SRTC {
 
       private _keepAliveInterval:number;
 
-      pipe:any; // TODO: Faye.Client in DefinitelyTyped?
+      pipe:IPubSub;
       constructor(config:PeerChannelProperties){
          super();
          this.config = config;
-         if(typeof Faye === 'undefined'){
-            Faye = require('faye');
-         }
-         this.pipe = new Faye.Client(this.getServerEndpoint());
-         this.pipe.connect(() => {
-            this._onConnect();
-         });
+         this.pipe = this.config.pubSub;
+         this._onConnect();
       }
 
       getZoneChannel():string {
          return '/' + this.config.location;
       }
-
-      getServerEndpoint():string {
-         var protocol = typeof require === 'undefined' ? '//' : 'http://';
-         var host = this.config.serverUrl || 'localhost:4202';
-         return protocol + host + (this.config.serverMount || '/');
-      }
-
 
       //-----------------------------------------------------------------------
       // Peer Management functions
@@ -209,24 +197,25 @@ module SRTC {
 
       private _onConnect(){
          var zoneChannel = this.getZoneChannel();
-         var sub = this.pipe.subscribe(zoneChannel, (data) => {
+         this.pipe.subscribe(zoneChannel, (data) => {
             if(data.userId !== this.config.localId){
                this._handleZoneMessage(data);
             }
-         });
-         sub.callback(() => {
-            //console.log("Subscribed to zone channel: " + zoneChannel);
-            this.pipe.publish(zoneChannel, {
-               type: "join",
-               userId: this.config.localId
-            });
+         },(error?:any) => {
+            if(typeof error !== 'undefined'){
+               console.error("failed to subscribe to",zoneChannel);
+            }
+            else {
+               //console.log("Subscribed to zone channel: " + zoneChannel);
+               this.pipe.publish(zoneChannel, {
+                  type: "join",
+                  userId: this.config.localId
+               });
 
-            this._keepAliveInterval = this._keepAliveInterval || setInterval(() => {
-               this.pipe.publish(this.getZoneChannel(),{type:"ping"});
-            },5000);
-         });
-         sub.errback(() => {
-            console.error("failed to subscribe to",zoneChannel);
+               this._keepAliveInterval = this._keepAliveInterval || setInterval(() => {
+                  this.pipe.publish(this.getZoneChannel(),{type:"ping"});
+               },5000);
+            }
          });
       }
 

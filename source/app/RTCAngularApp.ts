@@ -8,7 +8,6 @@
 ///<reference path="../../public/app/sococo-rtc.d.ts"/>
 
 module SococoRTCApp {
-   declare var SRTC:any;
    declare var attachMediaStream;
    export var app = angular.module('sococoRTC', [
       // Cookies are used to retain generated user ID when refreshing the browser.
@@ -34,18 +33,22 @@ module SococoRTCApp {
          $scope.initialized = true;
          var host = (<any>location).origin
             .replace(/^([a-zA-z]+):\/\//, '')
-            .replace(/:(\d+)$/,':' + socketPort);
-         $scope.localPeer = new SRTC.LocalPeerConnection({
-            location:channel,
-            localId:$scope.localPeerId,
-            serverUrl:host,
-            serverMount:socketMount
-         });
-         $scope.peers = $scope.localPeer.peers;
+            .replace(/:(\d+)$/,':' + socketPort) || 'localhost:4202';
+         var serverUrl = '//' + host + (socketMount || '/');
+         var pubSub = new SRTC.FayePubSub();
+         pubSub.connect(serverUrl,(error?:any) => {
+            $scope.localPeer = new SRTC.LocalPeerConnection({
+               location:channel,
+               localId:$scope.localPeerId,
+               pubSub:pubSub
+            });
+            $scope.peers = $scope.localPeer.peers;
 
-         // Tell Angular to update scope bindings.
-         $scope.localPeer.on('addPeer removePeer',function() {
-            $scope.$apply();
+            // Tell Angular to update scope bindings.
+            $scope.localPeer.on('addPeer removePeer',function() {
+               $scope.$apply();
+            });
+
          });
       };
 
