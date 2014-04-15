@@ -4,8 +4,8 @@
   "description": "multi-peer WebRTC prototype with dynamic stream properties.",
   "main": "server.js",
   "scripts": {
-    "test": "npm install && ./node_modules/.bin/grunt karma:once",
-    "postinstall": "./node_modules/.bin/bower install && ./node_modules/.bin/grunt"
+    "test": "./node_modules/.bin/grunt && ./node_modules/.bin/grunt karma:once",
+    "postinstall": "./node_modules/.bin/bower install"
   },
   "licenses": [
     {
