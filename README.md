@@ -1,4 +1,4 @@
-# Sococo.RTC
+# Sococo.RTC [![Build Status](https://travis-ci.org/sococo/sococo-rtc.svg?branch=master)](https://travis-ci.org/sococo/sococo-rtc)
 
 A simple prototype demonstrating how to build a dynamic WebRTC meeting application using
 Typescript, Angular.JS, and Heroku.
