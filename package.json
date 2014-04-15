@@ -1,6 +1,6 @@
 {
   "name": "sococo-rtc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "multi-peer WebRTC prototype with dynamic stream properties.",
   "main": "server.js",
   "scripts": {
