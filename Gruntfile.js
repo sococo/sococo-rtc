@@ -139,6 +139,17 @@ module.exports = function(grunt) {
          options: {
             commitMessage: 'chore(attribution): update contributors'
          }
+      },
+
+      karma:{
+         unit:{
+            configFile: 'test/karma.conf.js',
+            background: true
+         },
+         once:{
+            configFile: 'test/karma.conf.js',
+            options: {singleRun:true}
+         }
       }
    };
 
@@ -155,6 +166,11 @@ module.exports = function(grunt) {
    grunt.loadNpmTasks('grunt-contrib-watch');
    grunt.loadNpmTasks('grunt-express-server');
    grunt.registerTask('develop', ['default','express','watch']);
+
+   // Test
+   grunt.loadNpmTasks('grunt-karma');
+   grunt.registerTask('test', ['default','karma:once']);
+
 
    // Release/Deploy
    grunt.loadNpmTasks('grunt-bump');

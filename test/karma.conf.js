@@ -2,11 +2,6 @@
 module.exports = function(config) {
    "use strict";
 
-   // Determine the proper test runner to use
-   var isWin = !!process.platform.match(/^win/);
-   var usePhantom = (process && process.env) ? process.env.TEAMCITY_VERSION : false;
-   var browser = usePhantom ? "PhantomJS" : (isWin? "IE" : "Chrome");
-
    config.set({
       basePath: '../',
       frameworks: ['jasmine'],
@@ -23,13 +18,12 @@ module.exports = function(config) {
       autoWatch: true,
       background:true,
       // - Chrome, ChromeCanary, Firefox, Opera, Safari (only Mac), PhantomJS, IE (only Windows)
-      browsers: [browser],
+      browsers: process.env.TRAVIS ? ['Firefox'] : ['Chrome'],
       singleRun: false,
       reportSlowerThan: 500,
       plugins: [
-         'karma-ie-launcher',
+         'karma-firefox-launcher',
          'karma-chrome-launcher',
-         'karma-phantomjs-launcher',
          'karma-jasmine'
       ]
    });
