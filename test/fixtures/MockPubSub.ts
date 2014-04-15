@@ -7,12 +7,22 @@ module SRTC.Test {
       public connected:boolean = false;
       public subscribedChannels:any = {};
 
+      defer(fn:any) {
+         if(!fn){
+            return;
+         }
+         setTimeout(() => {
+            fn();
+         });
+      }
+
       connect(url:string,done?:(error?: any) => void) {
-         done && done();
          this.connected = true;
+         done && this.defer(done);
       }
       disconnect() {
          this.connected = false;
+         this.off();
       }
 
       incrementChannel(channel:string,val:number){
@@ -25,14 +35,16 @@ module SRTC.Test {
       subscribe(channel:string,process:(data:any) => void,done?:(error?:any) => void) {
          this.on(channel,process);
          this.incrementChannel(channel,1);
-         done && done();
+         done && this.defer(done);
       }
       unsubscribe(channel:string) {
          this.off(channel);
          this.incrementChannel(channel,-1);
       }
       publish(channel:string,data:any) {
-         this.trigger(channel,data);
+         this.defer(() => {
+            this.trigger(channel,data);
+         });
       }
    }
 }

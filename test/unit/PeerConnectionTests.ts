@@ -13,8 +13,11 @@ module SRTC.Test {
          receiveAudio:false,
          receiveVideo:false
       };
-      beforeEach(() => {
+      beforeEach((done) => {
          pipe = new MockPubSub();
+         pipe.connect('null://fake',(error?:any) => {
+            done();
+         });
          config = {
             pipe: <IPubSub>pipe,
             zoneId: "testZone",
@@ -22,16 +25,66 @@ module SRTC.Test {
             remoteId: "remoteUserId"
          };
       });
-      it('should throw error if given disconnected pub/sub', () => {
-         var remote = () => {
-            new SRTC.PeerConnection(config,peerProperties);
-         };
-         expect(remote).toThrow("PeerConnection requires a connected PubSub to function");
+      afterEach(() => {
+         pipe.disconnect();
       });
-      it('should subscribe to peer channel on construction', () => {
-         pipe.connect('null://fake');
+      it('should throw error if given disconnected pub/sub', () => {
+         var conn = new SRTC.PeerConnection(config,peerProperties);
+         pipe.disconnect();
+         expect(()=>{ conn.connect(); }).toThrowError();
+      });
+      it('should subscribe to peer channel on construction', (done) => {
          var remote = new SRTC.PeerConnection(config,peerProperties);
-         expect(pipe.subscribedChannels[remote.getPeerChannel()]).toBe(1);
+         remote.connect();
+         remote.on('ready',() => {
+            expect(pipe.subscribedChannels[remote.getPeerChannel()]).toBe(1);
+            remote.destroy();
+            done();
+         });
+      });
+
+      describe('Two Peers', () => {
+         var local:SRTC.PeerConnection;
+         var remote:SRTC.PeerConnection;
+         beforeEach(() => {
+            local = new SRTC.PeerConnection({
+               pipe: <IPubSub>pipe,
+               zoneId: "testZone",
+               localId: "user1",
+               remoteId: "user2"
+            },peerProperties);
+            remote = new SRTC.PeerConnection({
+               pipe: <IPubSub>pipe,
+               zoneId: "testZone",
+               localId: "user2",
+               remoteId: "user1"
+            },peerProperties);
+         });
+
+         afterEach(() => {
+            local.destroy();
+            remote.destroy();
+         });
+
+         it('should generate deterministic channel name for peers to share', () => {
+            expect(local.getPeerChannel()).toBe(remote.getPeerChannel());
+         });
+
+         it('should connect peers and signal ready', (done) => {
+            var remaining:number = 2;
+            var decrement = () => {
+               remaining--;
+               if(remaining <= 0){
+                  done();
+               }
+            };
+            local.on('ready',decrement);
+            local.connect();
+            remote.on('ready',decrement);
+            remote.connect();
+            expect(pipe.subscribedChannels[local.getPeerChannel()]).toBe(2);
+         });
+
       });
    });
 }
