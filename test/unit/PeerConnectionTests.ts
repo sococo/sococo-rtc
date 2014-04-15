@@ -95,8 +95,18 @@ module SRTC.Test {
             local.off();
             remote.off();
             local.negotiateProperties(peerProperties);
-            local.on('connected', decrement);
-            remote.on('connected', decrement);
+
+            // Firefox errors without a media stream
+            if((<any>window).webrtcDetectedBrowser=='firefox'){
+               local.on('error',() => {
+                  done();
+               });
+            }
+            // Chrome/Opera will still generate an SDP.
+            else {
+               local.on('connected', decrement);
+               remote.on('connected', decrement);
+            }
          };
          local.on('ready',decrement);
          remote.on('ready',decrement);

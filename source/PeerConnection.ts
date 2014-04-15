@@ -296,7 +296,6 @@ module SRTC {
             },offerError);
          };
          var offerError = (error) => {
-            console.warn("ERROR creating OFFER",error);
             done && done(error);
          };
          this.updateConstraints();
@@ -356,6 +355,7 @@ module SRTC {
          this.createConnection();
          this.offer((error?:any,offer?:any) => {
             if(error) {
+               this.trigger("error",error);
                console.error(error);
             }
          });
