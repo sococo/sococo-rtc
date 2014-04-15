@@ -71,7 +71,7 @@ module SRTC {
    export class PeerConnection extends Events {
       connection:RTCPeerConnection = null;
       config:PeerConnectionConfig;
-      pubSub:any; // TODO: PubSub interface, (Faye.Client currently)
+      pubSub:IPubSub;
       localStream:LocalMediaStream;
       remoteStream:MediaStream;
 
@@ -108,19 +108,21 @@ module SRTC {
          this.properties = props;
          this.pubSub = this.config.pipe;
          this.localStream = typeof config.localStream !== 'undefined' ? config.localStream : null;
-         var peerChannel = this.getPeerChannel();
+      }
 
+      connect(){
+         var peerChannel = this.getPeerChannel();
          if(!this.pubSub.connected){
             throw new Error("PeerConnection requires a connected PubSub to function");
          }
-
-         //console.warn("Subscribing to peer: \n",peerChannel);
-         this.pubSub.subscribe(peerChannel, (data) => {
+         var channelMessageHandler = (data) => {
             // Only process remote peer messages.
             if(data.userId !== this.config.localId){
                this._handlePeerMessage(data);
             }
-         },(error?:any)=>{
+         };
+         //console.warn("Subscribing to peer: \n",peerChannel);
+         this.pubSub.subscribe(peerChannel, channelMessageHandler,(error?:any)=>{
             if(error){
                console.error("failed to subscribe to",peerChannel);
             }
@@ -176,6 +178,9 @@ module SRTC {
 
 
       send(data:any){
+         if(!this.pubSub){
+            throw new Error("Invalid PubSub");
+         }
          data = data || {};
          data.userId = this.config.localId;
          this.pubSub.publish(this.getPeerChannel(),data);
@@ -236,12 +241,8 @@ module SRTC {
             this.pubSub.unsubscribe(this.getPeerChannel());
             this.pubSub = null;
          }
-         if(this.connection){
-            this.connection.close();
-            this.connection = null;
-         }
+         this.destroyConnection();
          this.clearHeartbeat();
-         this._closeRemoteStream();
          this.localStream = null;
       }
 

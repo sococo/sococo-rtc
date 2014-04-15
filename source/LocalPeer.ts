@@ -86,6 +86,7 @@ module SRTC {
             localStream:this.localStream || null,
             remoteId: remoteId
          }, this.properties);
+         peer.connect();
 
          // Negotiate an offer when the connection is ready.
          peer.on('ready',() => {
