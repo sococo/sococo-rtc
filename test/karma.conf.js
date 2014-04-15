@@ -18,7 +18,7 @@ module.exports = function(config) {
       autoWatch: true,
       background:true,
       // - Chrome, ChromeCanary, Firefox, Opera, Safari (only Mac), PhantomJS, IE (only Windows)
-      browsers: process.env.TRAVIS ? ['Firefox'] : ['Chrome'],
+      browsers: process.env.TRAVIS ? ['Chrome'] : ['Chrome'],
       singleRun: false,
       reportSlowerThan: 500,
       plugins: [
