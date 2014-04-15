@@ -3,26 +3,35 @@
 ///<reference path="../../public/app/sococo-rtc.d.ts"/>
 ///<reference path="../fixtures/MockPubSub.ts"/>
 
-module Sococo.RTC.Test {
+module SRTC.Test {
    describe('SRTC.PeerConnection', () => {
+      var pipe:MockPubSub;
+      var config:SRTC.PeerConnectionConfig;
+      var peerProperties:SRTC.PeerProperties = {
+         sendAudio:false,
+         sendVideo:false,
+         receiveAudio:false,
+         receiveVideo:false
+      };
       beforeEach(() => {
-
-      });
-      it('should construct in isolation', () => {
-         var config:SRTC.PeerConnectionConfig = {
-            pipe: new MockPubSub(),
+         pipe = new MockPubSub();
+         config = {
+            pipe: <IPubSub>pipe,
             zoneId: "testZone",
             localId: "localUserId",
             remoteId: "remoteUserId"
          };
-         var peerProperties:SRTC.PeerProperties = {
-            sendAudio:false,
-            sendVideo:false,
-            receiveAudio:false,
-            receiveVideo:false
+      });
+      it('should throw error if given disconnected pub/sub', () => {
+         var remote = () => {
+            new SRTC.PeerConnection(config,peerProperties);
          };
-         var remotePeerNegotiator = new SRTC.PeerConnection(config,peerProperties);
-         expect(remotePeerNegotiator).toBeTruthy();
+         expect(remote).toThrow("PeerConnection requires a connected PubSub to function");
+      });
+      it('should subscribe to peer channel on construction', () => {
+         pipe.connect('null://fake');
+         var remote = new SRTC.PeerConnection(config,peerProperties);
+         expect(pipe.subscribedChannels[remote.getPeerChannel()]).toBe(1);
       });
    });
 }

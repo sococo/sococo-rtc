@@ -109,6 +109,11 @@ module SRTC {
          this.pubSub = this.config.pipe;
          this.localStream = typeof config.localStream !== 'undefined' ? config.localStream : null;
          var peerChannel = this.getPeerChannel();
+
+         if(!this.pubSub.connected){
+            throw new Error("PeerConnection requires a connected PubSub to function");
+         }
+
          //console.warn("Subscribing to peer: \n",peerChannel);
          this.pubSub.subscribe(peerChannel, (data) => {
             // Only process remote peer messages.

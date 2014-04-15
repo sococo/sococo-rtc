@@ -8,46 +8,50 @@ module SRTC {
    declare var Faye:any;
    declare var require:any;
 
+   /**
+    * Describe a simple pub/sub interface that can serve
+    */
    export interface IPubSub {
-      connect:(url:string,done:(error?: any) => void) => any;
+      connected:boolean;
+      connect:(url:string,done?:(error?: any) => void) => any;
       disconnect:() => any;
-      subscribe:(channel:string,process:(data:any) => void,done:(error?:any) => void) => any;
+      subscribe:(channel:string,process:(data:any) => void,done?:(error?:any) => void) => any;
       unsubscribe:(channel:string) => any;
       publish:(channel:string,data:any) => any;
    }
 
    export class FayePubSub implements IPubSub {
       private _faye:any = null;
-      private _connected:boolean = false;
+      connected:boolean = false;
       private _assertValidConnection(){
-         if(!this._faye || !this._connected){
+         if(!this._faye || !this.connected){
             throw new Error("Must have a valid Faye connection before subscribing to a channel");
          }
       }
-      connect(url:string,done:(error?: any) => void) {
+      connect(url:string,done?:(error?: any) => void) {
          if(typeof Faye === 'undefined'){
             Faye = require('faye');
          }
          this._faye = new Faye.Client(url);
          this._faye.connect(() => {
-            this._connected = true;
-            done();
+            this.connected = true;
+            done && done();
          });
       }
       disconnect() {
          if(this._faye){
             this._faye.disconnect();
          }
-         this._connected = false;
+         this.connected = false;
       }
-      subscribe(channel:string,process:(data:any) => void,done:(error?:any) => void) {
+      subscribe(channel:string,process:(data:any) => void,done?:(error?:any) => void) {
          this._assertValidConnection();
          var sub = this._faye.subscribe(channel,process);
          sub.callback(() => {
-            done();
+            done && done();
          });
          sub.errback(() => {
-            done("Failed to subscribe to channel: " + channel);
+            done && done("Failed to subscribe to channel: " + channel);
          });
       }
       unsubscribe(channel:string) {

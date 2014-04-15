@@ -2,11 +2,8 @@
 ///<reference path="../../types/angular/angular-mocks.d.ts"/>
 ///<reference path="../../public/app/sococo-rtc.d.ts"/>
 ///<reference path="../fixtures/MockPubSub.ts"/>
-module Sococo.RTC.Test {
-   describe('SRTC.LocalPeerConnection', () => {
-      beforeEach(() => {
-
-      });
+module SRTC.Test {
+   describe('SRTC.LocalPeer', () => {
       it('should construct in isolation', () => {
          var localPeer = new SRTC.LocalPeerConnection({
             pubSub: new MockPubSub(),
