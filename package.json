@@ -50,5 +50,7 @@
     "karma": "~0.12.9",
     "grunt-karma": "~0.8.2"
   },
-  "contributors": []
+  "contributors": [
+    "Justin DuJardin <justin@dujardinconsulting.com>"
+  ]
 }
